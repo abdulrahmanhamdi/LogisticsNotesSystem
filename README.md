@@ -59,7 +59,7 @@ The database **LogisticsNotesDB** contains **18 relational tables** designed fol
 Include your ER Diagram here:
 
 ```markdown
-> ![ER Diagram](ER-Diagram.PNG)
+> ![ER Diagram](ER-Diagram.png)
 ```
 
 ---
