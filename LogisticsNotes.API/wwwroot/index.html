@@ -3,49 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logistics & Notes System | Login</title>
+    <title>Logistics & Notes System</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div id="login-screen">
         <div class="login-card">
             <div class="text-center mb-4">
                 <i class="fas fa-cube fa-3x text-primary mb-3"></i>
-                <h4 class="text-gray-900">Welcome Back!</h4>
-                <p class="text-muted small">Login to access Logistics & Notes</p>
+                <h4 class="text-gray-900">Login</h4>
+                <p class="text-muted small">Logistics & Notes System</p>
             </div>
             <form id="loginForm">
                 <div class="mb-3">
-                    <input type="email" class="form-control form-control-lg" id="loginEmail" placeholder="Enter Email Address..." required value="admin@sys.com">
+                    <input type="email" class="form-control form-control-lg" id="loginEmail" placeholder="Email" required value="admin@sys.com">
                 </div>
                 <div class="mb-3">
                     <input type="password" class="form-control form-control-lg" id="loginPassword" placeholder="Password" required value="123456">
                 </div>
                 <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill">Login</button>
             </form>
-            <div id="loginError" class="alert alert-danger mt-3 hidden text-center small">Invalid Email or Password</div>
-            <hr>
-            <div class="text-center small">
-                <a href="#" class="text-muted">Forgot Password?</a>
-            </div>
+            <div id="loginError" class="alert alert-danger mt-3 hidden text-center small">Invalid credentials!</div>
         </div>
     </div>
 
     <div id="dashboard-screen" class="hidden">
-
         <div class="sidebar">
             <div class="sidebar-brand">
                 <i class="fas fa-cubes"></i> LOGI-NOTES
             </div>
             <a class="nav-item active" onclick="showSection('logistics')">
-                <i class="fas fa-truck"></i> Logistics System
+                <i class="fas fa-truck"></i> Shipping System
             </a>
             <a class="nav-item" onclick="showSection('notes')">
-                <i class="fas fa-sticky-note"></i> Personal Notes
+                <i class="fas fa-sticky-note"></i> Notes
             </a>
             <a class="nav-item" onclick="showSection('users')">
                 <i class="fas fa-users-cog"></i> User Management
@@ -59,11 +52,11 @@
 
         <div class="content-wrapper">
             <div class="top-bar">
-                <h5 class="m-0 text-primary fw-bold" id="pageTitle">Logistics Dashboard</h5>
+                <h5 class="m-0 text-primary fw-bold" id="pageTitle">Dashboard</h5>
                 <div class="d-flex align-items-center">
                     <div class="text-end me-3">
-                        <span class="d-block text-gray-600 small" id="userNameDisplay">User Name</span>
-                        <span class="badge bg-success" id="userRoleDisplay">Role</span>
+                        <span class="d-block text-gray-600 small" id="userNameDisplay">Guest</span>
+                        <span class="badge bg-success" id="userRoleDisplay">User</span>
                     </div>
                     <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
                         <i class="fas fa-user text-gray-400"></i>
@@ -72,109 +65,118 @@
             </div>
 
             <div class="main-content">
-
+                <!-- Logistics Section -->
                 <div id="section-logistics">
-                    <div class="row mb-4">
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <div class="card card-custom h-100 py-2 border-left-primary">
-                                <div class="card-body">
-                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Shipments</div>
-                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-shipments">0</div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-xl-3 col-md-6 mb-4">
-                            <button class="btn btn-primary w-100 h-100 shadow" data-bs-toggle="modal" data-bs-target="#shipmentModal">
-                                <i class="fas fa-plus fa-2x mb-2"></i><br>New Shipment
-                            </button>
-                        </div>
+                    <div class="d-flex justify-content-between mb-4">
+                        <h4 class="text-gray-800">Shipments Management</h4>
+                        <button class="btn btn-primary shadow" onclick="openShipmentModal()">
+                            <i class="fas fa-plus"></i> New Shipment
+                        </button>
                     </div>
-
-                    <div class="card card-custom mb-4">
-                        <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
-                            <h6 class="m-0 font-weight-bold text-primary">Recent Shipments</h6>
-                            <button class="btn btn-sm btn-outline-primary" onclick="getShipments()"><i class="fas fa-sync"></i> Refresh</button>
-                        </div>
+                    <div class="card card-custom">
                         <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-bordered" width="100%" cellspacing="0">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Description</th>
-                                            <th>Weight</th>
-                                            <th>Status</th>
-                                            <th>Date</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="shipmentsTable"></tbody>
-                                </table>
-                            </div>
+                            <table class="table table-hover">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Description</th>
+                                        <th>Weight</th>
+                                        <th>Status</th>
+                                        <th>Ship Date</_shipment</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shipmentsTable"></tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
 
+                <!-- Notes Section -->
                 <div id="section-notes" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">My Personal Notes</h4>
-                        <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#noteModal">
-                            <i class="fas fa-plus fa-sm text-white-50"></i> Add Note
+                        <button class="btn btn-success shadow" onclick="openNoteModal()">
+                            <i class="fas fa-plus"></i> New Note
                         </button>
                     </div>
-                    <div class="row" id="notesList">
-                    </div>
+                    <div class="row" id="notesList"></div>
                 </div>
 
+                <!-- Users Section -->
                 <div id="section-users" class="hidden">
-                    <div class="card card-custom mb-4">
-                        <div class="card-header py-3 bg-white d-flex justify-content-between">
-                            <h6 class="m-0 font-weight-bold text-primary">System Users</h6>
-                            <button class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#userModal"><i class="fas fa-user-plus"></i> Add User</button>
-                        </div>
+                    <div class="d-flex justify-content-between mb-4">
+                        <h4 class="text-gray-800">Users List</h4>
+                        <button class="btn btn-info text-white shadow" onclick="openUserModal()">
+                            <i class="fas fa-user-plus"></i> Add User
+                        </button>
+                    </div>
+                    <div class="card card-custom">
                         <div class="card-body">
                             <table class="table table-hover">
                                 <thead>
-                                    <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th></tr>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Actions</th>
+                                    </tr>
                                 </thead>
                                 <tbody id="usersTable"></tbody>
                             </table>
                         </div>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
 
+    <!-- Shipment Modal -->
     <div class="modal fade" id="shipmentModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title">Create New Shipment</h5>
+                    <h5 class="modal-title" id="shipmentModalTitle">New Shipment</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="shipmentForm">
-                        <div class="mb-3"><label>Description</label><input type="text" class="form-control" id="sDesc" required></div>
-                        <div class="mb-3"><label>Weight (KG)</label><input type="number" class="form-control" id="sWeight" value="1" required></div>
-                        <button type="submit" class="btn btn-primary w-100">Send</button>
+                        <input type="hidden" id="sId">
+                        <div class="mb-3">
+                            <label>Description</label>
+                            <input type="text" class="form-control" id="sDesc" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Weight (KG)</label>
+                            <input type="number" class="form-control" id="sWeight" value="1" step="0.1" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">Save</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Note Modal -->
     <div class="modal fade" id="noteModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Write New Note</h5>
+                    <h5 class="modal-title" id="noteModalTitle">New Note</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="noteForm">
-                        <div class="mb-3"><label>Title</label><input type="text" class="form-control" id="nTitle" required></div>
-                        <div class="mb-3"><label>Content</label><textarea class="form-control" id="nContent" rows="4" required></textarea></div>
+                        <input type="hidden" id="nId">
+                        <div class="mb-3">
+                            <label>Title</label>
+                            <input type="text" class="form-control" id="nTitle" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Content</label>
+                            <textarea class="form-control" id="nContent" rows="4" required></textarea>
+                        </div>
                         <button type="submit" class="btn btn-success w-100">Save</button>
                     </form>
                 </div>
@@ -182,24 +184,29 @@
         </div>
     </div>
 
+    <!-- User Modal -->
     <div class="modal fade" id="userModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-info text-white">
-                    <h5 class="modal-title">Register User</h5>
+                    <h5 class="modal-title" id="userModalTitle">New User</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
                     <form id="userForm">
+                        <input type="hidden" id="uId">
                         <div class="row">
-                            <div class="col"><input type="text" class="form-control mb-2" id="uFname" placeholder="First Name" required></div>
-                            <div class="col"><input type="text" class="form-control mb-2" id="uLname" placeholder="Last Name" required></div>
+                            <div class="col">
+                                <input type="text" class="form-control mb-2" id="uFname" placeholder="First Name" required>
+                            </div>
+                            <div class="col">
+                                <input type="text" class="form-control mb-2" id="uLname" placeholder="Last Name" required>
+                            </div>
                         </div>
                         <input type="email" class="form-control mb-2" id="uEmail" placeholder="Email" required>
-                        <input type="password" class="form-control mb-2" id="uPass" placeholder="Password" value="123456" required>
-                        <select class="form-select mb-3" id="uRole">
-                        </select>
-                        <button type="submit" class="btn btn-info text-white w-100">Register</button>
+                        <input type="password" class="form-control mb-2" id="uPass" placeholder="Password (leave empty to keep)">
+                        <select class="form-select mb-3" id="uRole"></select>
+                        <button type="submit" class="btn btn-info text-white w-100">Save</button>
                     </form>
                 </div>
             </div>
