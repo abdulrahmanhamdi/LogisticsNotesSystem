@@ -52,7 +52,7 @@ function loadAllData() {
     getNotes();
     getUsers();
     getRoles();
-    loadShipmentLookups(); // <--- NEW: Load branches and services
+    loadShipmentLookups();
 }
 
 // --- Lookups for Shipment Modal (Branches & Service Types) ---
@@ -97,6 +97,14 @@ async function loadShipmentLookups() {
 async function getShipments() {
     const res = await fetch(`${API_URL}/Shipments`);
     const data = await res.json();
+
+    // --- UPDATED: Update Shipments Statistics ---
+    document.getElementById("stat-total-shipments").innerText = data.length;
+    // Calculate pending shipments (assuming status ID 5 is Pending)
+    const pendingCount = data.filter(s => s.currentStatusId === 5).length;
+    document.getElementById("stat-pending-shipments").innerText = pendingCount;
+    // -------------------------------------------
+
     const tbody = document.getElementById("shipmentsTable");
     tbody.innerHTML = "";
     data.forEach(s => {
@@ -128,16 +136,18 @@ async function editShipment(id) {
     const res = await fetch(`${API_URL}/Shipments/${id}`);
     const s = await res.json();
 
+    // Populate text fields
     document.getElementById("sId").value = s.shipmentId;
     document.getElementById("sDesc").value = s.description;
     document.getElementById("sWeight").value = s.weight;
-    // Set selected values for dropdowns on edit (assuming data includes these IDs)
+
+    // --- NEW FIX: Set selected values for dropdowns ---
     document.getElementById("sOrigin").value = s.originBranchId;
     document.getElementById("sDest").value = s.destinationBranchId;
     document.getElementById("sService").value = s.serviceTypeId;
+    // ------------------------------------------------
 
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
-
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
 
@@ -151,7 +161,6 @@ document.getElementById("shipmentForm").addEventListener("submit", async (e) => 
         shipmentId: isEdit ? parseInt(id) : 0,
         senderId: CURRENT_USER.userId,
 
-        // UPDATED: Reading values from the dynamic dropdowns
         originBranchId: parseInt(document.getElementById("sOrigin").value),
         destinationBranchId: parseInt(document.getElementById("sDest").value),
         serviceTypeId: parseInt(document.getElementById("sService").value),
@@ -185,6 +194,11 @@ async function deleteShipment(id) {
 async function getNotes() {
     const res = await fetch(`${API_URL}/Notes`);
     const data = await res.json();
+
+    // --- UPDATED: Update Notes Statistics ---
+    document.getElementById("stat-total-notes").innerText = data.length;
+    // ----------------------------------------
+
     const list = document.getElementById("notesList");
     list.innerHTML = "";
     data.forEach(n => {
