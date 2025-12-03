@@ -38,4 +38,7 @@ public partial class Courier
     [ForeignKey("UserId")]
     [InverseProperty("Courier")]
     public virtual User User { get; set; } = null!;
+
+    [InverseProperty("Courier")]
+    public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
 }

@@ -41,7 +41,6 @@ function showSection(sectionId) {
     document.getElementById("section-logistics").classList.add("hidden");
     document.getElementById("section-notes").classList.add("hidden");
     document.getElementById("section-users").classList.add("hidden");
-    // NEW: Hide Branches section
     document.getElementById("section-branches").classList.add("hidden");
 
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
@@ -55,12 +54,11 @@ function loadAllData() {
     getNotes();
     getUsers();
     getRoles();
-    // NEW: Load Branches table
     getBranchesTable();
     loadShipmentLookups();
 }
 
-// --- Lookups for Shipment Modal (Branches & Service Types) ---
+// --- Lookups for Shipment Modal (Branches, Service Types, & Couriers) ---
 async function loadShipmentLookups() {
     // 1. Fetch Branches
     try {
@@ -93,6 +91,23 @@ async function loadShipmentLookups() {
         });
 
     } catch (e) { console.error("Error loading service types", e); }
+
+    // 3. Fetch Couriers (NEW)
+    try {
+        const res = await fetch(`${API_URL}/Couriers`);
+        const couriers = await res.json();
+
+        const courierSel = document.getElementById("sCourier");
+        // Keep the default "Unassigned" option
+        courierSel.innerHTML = '<option value="">-- Unassigned --</option>';
+
+        couriers.forEach(c => {
+            // Access the nested User object for the name
+            const courierName = c.user ? `${c.user.firstName} ${c.user.lastName}` : `Courier #${c.courierId}`;
+            courierSel.innerHTML += `<option value="${c.courierId}">${courierName} (Vehicle: ${c.vehicleType || 'N/A'})</option>`;
+        });
+
+    } catch (e) { console.error("Error loading couriers", e); }
 }
 
 // ================= SHIPMENTS (CRUD) =================
@@ -136,7 +151,7 @@ function openShipmentModal() {
     document.getElementById("shipmentForm").reset();
     document.getElementById("sId").value = "";
     document.getElementById("shipmentModalTitle").innerText = "New Shipment";
-    // Crucial: Reload lookups here to ensure new branches are present
+    // Crucial: Reload lookups here to ensure new branches/couriers are present
     loadShipmentLookups();
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
@@ -154,9 +169,11 @@ async function editShipment(id) {
     document.getElementById("sOrigin").value = s.originBranchId;
     document.getElementById("sDest").value = s.destinationBranchId;
     document.getElementById("sService").value = s.serviceTypeId;
+    // NEW: Select the current courier
+    document.getElementById("sCourier").value = s.courierId || "";
 
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
-    // Crucial: Reload lookups here to ensure new branches are present
+    // Crucial: Reload lookups here to ensure new branches/couriers are present
     loadShipmentLookups();
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
@@ -166,6 +183,9 @@ document.getElementById("shipmentForm").addEventListener("submit", async (e) => 
     e.preventDefault();
     const id = document.getElementById("sId").value;
     const isEdit = id ? true : false;
+
+    // NEW: Get courier value
+    const courierVal = document.getElementById("sCourier").value;
 
     const payload = {
         shipmentId: isEdit ? parseInt(id) : 0,
@@ -178,8 +198,12 @@ document.getElementById("shipmentForm").addEventListener("submit", async (e) => 
         currentStatusId: 5, // Default to Pending
         description: document.getElementById("sDesc").value,
         weight: parseFloat(document.getElementById("sWeight").value),
-        estimatedDeliveryDate: new Date().toISOString()
+        estimatedDeliveryDate: new Date().toISOString(),
+
+        // NEW: Add courierId (send null if unassigned)
+        courierId: courierVal ? parseInt(courierVal) : null,
     };
+
     const method = isEdit ? "PUT" : "POST";
     const url = isEdit ? `${API_URL}/Shipments/${id}` : `${API_URL}/Shipments`;
     await fetch(url, {
@@ -353,7 +377,6 @@ async function getRoles() {
 }
 
 // ================= STATUS WORKFLOW =================
-// (Unchanged from previous update)
 async function openStatusModal(id) {
     document.getElementById("statusShipmentId").value = id;
     const res = await fetch(`${API_URL}/ShipmentStatus`);
@@ -452,7 +475,7 @@ document.getElementById("branchForm").addEventListener("submit", async (e) => {
         getBranchesTable(); // Update the branches table
         loadShipmentLookups(); // Crucial: Update the dropdowns in the Shipment modal
     } else {
-        alert("An error occurred during addition.");
+        alert("An error occurred during addition. Status: " + res.status);
     }
 });
 
