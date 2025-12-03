@@ -60,9 +60,9 @@ Include your ER Diagram and Logic ERD here:
 
 ![ER Diagram](./ER_Diagram.png)
 
-![Tables Diagram 1](./Tables_Diagram1.png)
+![Tables Diagram 1](./Tables_Diagram1.jpg)
 
-![Tables Diagram 2](./Tables_Diagram2.png)
+![Tables Diagram 2](./Tables_Diagram2.jpg)
 
 ---
 
