@@ -41,6 +41,8 @@ function showSection(sectionId) {
     document.getElementById("section-logistics").classList.add("hidden");
     document.getElementById("section-notes").classList.add("hidden");
     document.getElementById("section-users").classList.add("hidden");
+    // NEW: Hide Branches section
+    document.getElementById("section-branches").classList.add("hidden");
 
     document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
 
@@ -53,6 +55,8 @@ function loadAllData() {
     getNotes();
     getUsers();
     getRoles();
+    // NEW: Load Branches table
+    getBranchesTable();
     loadShipmentLookups();
 }
 
@@ -132,6 +136,8 @@ function openShipmentModal() {
     document.getElementById("shipmentForm").reset();
     document.getElementById("sId").value = "";
     document.getElementById("shipmentModalTitle").innerText = "New Shipment";
+    // Crucial: Reload lookups here to ensure new branches are present
+    loadShipmentLookups();
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
 
@@ -150,6 +156,8 @@ async function editShipment(id) {
     document.getElementById("sService").value = s.serviceTypeId;
 
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
+    // Crucial: Reload lookups here to ensure new branches are present
+    loadShipmentLookups();
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
 
@@ -344,56 +352,40 @@ async function getRoles() {
     data.forEach(r => sel.innerHTML += `<option value="${r.roleId}">${r.roleName}</option>`);
 }
 
-// ================= STATUS WORKFLOW (UNCHANGED) =================
-
-// 1. Open Status Modal and populate dropdown
+// ================= STATUS WORKFLOW =================
+// (Unchanged from previous update)
 async function openStatusModal(id) {
     document.getElementById("statusShipmentId").value = id;
-
-    // Fetch available statuses from the server
     const res = await fetch(`${API_URL}/ShipmentStatus`);
     const statuses = await res.json();
-
     const sel = document.getElementById("newStatusSelect");
     sel.innerHTML = "";
     statuses.forEach(st => {
         sel.innerHTML += `<option value="${st.statusId}">${st.statusName}</option>`;
     });
-
     new bootstrap.Modal(document.getElementById('statusModal')).show();
 }
 
-// 2. Handle Status Update Submission
 document.getElementById("statusForm").addEventListener("submit", async (e) => {
     e.preventDefault();
     const id = document.getElementById("statusShipmentId").value;
     const newStatusId = parseInt(document.getElementById("newStatusSelect").value);
-
-    // Fetch the old shipment object to perform a full PUT update
     const oldRes = await fetch(`${API_URL}/Shipments/${id}`);
     const shipment = await oldRes.json();
-
-    // Update the status
     shipment.currentStatusId = newStatusId;
-
-    // If the status is "Delivered" (ID 4 in this example), update the delivery date
     if (newStatusId === 4) {
         shipment.deliveredAt = new Date().toISOString();
     }
-
-    // Send the update (using PUT to replace the whole object)
     await fetch(`${API_URL}/Shipments/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(shipment)
     });
-
     bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
     alert("Shipment status updated successfully!");
-    getShipments(); // Refresh the table and statistics
+    getShipments();
 });
 
-// 3. Helper Functions for Status Display
 function getStatusBadge(statusId) {
     if (statusId === 5) return "bg-warning text-dark"; // Pending
     if (statusId === 6) return "bg-info text-white";    // Picked Up
@@ -405,4 +397,70 @@ function getStatusBadge(statusId) {
 function getStatusName(statusId) {
     const names = { 5: "Pending", 6: "Picked Up", 7: "In Transit", 4: "Delivered" };
     return names[statusId] || `Status ${statusId}`;
+}
+
+
+// ================= BRANCHES (CRUD) =================
+
+// 1. Display Branches in the Table
+async function getBranchesTable() {
+    const res = await fetch(`${API_URL}/Branches`);
+    const data = await res.json();
+    const tbody = document.getElementById("branchesTable");
+    tbody.innerHTML = "";
+    data.forEach(b => {
+        tbody.innerHTML += `
+            <tr>
+                <td>${b.branchId}</td>
+                <td><strong>${b.branchName}</strong></td>
+                <td><span class="badge bg-info text-dark">${b.city}</span></td>
+                <td>${b.address}</td>
+                <td>${b.phone}</td>
+                <td>
+                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBranch(${b.branchId})"><i class="fas fa-trash"></i></button>
+                </td>
+            </tr>`;
+    });
+}
+
+// 2. Open the Modal
+function openBranchModal() {
+    document.getElementById("branchForm").reset();
+    new bootstrap.Modal(document.getElementById('branchModal')).show();
+}
+
+// 3. Save New Branch
+document.getElementById("branchForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+        branchName: document.getElementById("bName").value,
+        city: document.getElementById("bCity").value,
+        address: document.getElementById("bAddress").value,
+        phone: document.getElementById("bPhone").value
+    };
+
+    const res = await fetch(`${API_URL}/Branches`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    if (res.ok) {
+        bootstrap.Modal.getInstance(document.getElementById('branchModal')).hide();
+        alert("Branch added successfully!");
+        getBranchesTable(); // Update the branches table
+        loadShipmentLookups(); // Crucial: Update the dropdowns in the Shipment modal
+    } else {
+        alert("An error occurred during addition.");
+    }
+});
+
+// 4. Delete Branch
+async function deleteBranch(id) {
+    if (confirm("Warning: Deleting a branch may cause issues with associated shipments! Are you sure?")) {
+        await fetch(`${API_URL}/Branches/${id}`, { method: "DELETE" });
+        getBranchesTable();
+        loadShipmentLookups(); // Crucial: Update the dropdowns in the Shipment modal
+    }
 }
