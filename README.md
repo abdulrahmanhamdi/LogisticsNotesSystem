@@ -123,6 +123,21 @@ LogisticsNotesSystem/
 
 ---
 
+---
+
+## Project Outputs and Screenshots
+
+The following screenshots showcase the main user interfaces of the system, including different phases of shipment management, note tracking, and the authentication page.
+
+| Interface | Description |
+| :---: | :--- |
+| ![Login Page](LoginPage.png) | The primary Login page, allowing access based on user roles (Admin, Customer, Courier). |
+| ![Main Dashboard](Output4.png) | The central Dashboard displaying operational statistics and summaries (e.g., shipment status, note count). |
+| ![Management and Listing Interface](Output3.png) | The main data view interface, such as shipment lists or search results, with filtering options. |
+| ![Data Creation Form](Output2.png) | The input form used to create new data records (e.g., creating a new shipment or a personal note). |
+| ![Shipment Tracking Interface](Output1.png) | An interface dedicated to monitoring shipment status and viewing detailed tracking information. |
+
+---
 ## Author
 
 **[Eng:Abdulrahman Hamdi]**  
