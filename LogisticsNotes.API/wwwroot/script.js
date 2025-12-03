@@ -46,19 +46,22 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 });
 
 function logout() {
-    // ... (rest of the file remains the same, but I will provide the full update for completeness)
-}
+    // 1. Clear current user data from memory
+    CURRENT_USER = null;
 
-function showSection(sectionId) {
-    document.getElementById("section-logistics").classList.add("hidden");
-    document.getElementById("section-notes").classList.add("hidden");
-    document.getElementById("section-users").classList.add("hidden");
-    document.getElementById("section-branches").classList.add("hidden");
+    // 2. Hide the dashboard screen
+    const dashboard = document.getElementById("dashboard-screen");
+    dashboard.classList.add("hidden");
+    dashboard.style.display = "none"; // Ensure it's fully hidden
 
-    document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+    // 3. Show the login screen again
+    const loginScreen = document.getElementById("login-screen");
+    loginScreen.classList.remove("hidden");
+    loginScreen.style.display = "flex"; // Restore flex layout
 
-    document.getElementById(`section-${sectionId}`).classList.remove("hidden");
-    document.querySelector(`.nav-item[onclick="showSection('${sectionId}')"]`).classList.add("active");
+    // 4. Reset login form and hide any previous error messages (optional but recommended)
+    document.getElementById("loginForm").reset();
+    document.getElementById("loginError").classList.add("hidden");
 }
 
 function loadAllData() {
