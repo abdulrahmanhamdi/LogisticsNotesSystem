@@ -10,13 +10,13 @@ body {
     overflow-x: hidden;
 }
 
-/* Login */
+/* Login Screen */
 #login-screen {
     height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
-    background-image: url('sonbahar.webp');
+    background-image: url('../images/sonbahar.webp');
     background-size: cover;
     background-position: center;
     background-attachment: fixed;
@@ -30,13 +30,13 @@ body {
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
-/* Dashboard */
+/* Dashboard Screen */
 #dashboard-screen {
-    display: none;
     display: flex;
     height: 100vh;
 }
 
+/* Sidebar Navigation */
 .sidebar {
     width: var(--sidebar-width);
     background-color: #4e73df;
@@ -51,12 +51,12 @@ body {
     text-align: center;
     font-size: 1.2rem;
     font-weight: bold;
-    border-bottom: 1px solid rgba(255,255,255,0.15);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .nav-item {
     padding: 1rem 1.5rem;
-    color: rgba(255,255,255,0.8);
+    color: rgba(255, 255, 255, 0.8);
     cursor: pointer;
     text-decoration: none;
     transition: 0.2s;
@@ -64,7 +64,7 @@ body {
 
     .nav-item:hover, .nav-item.active {
         color: white;
-        background-color: rgba(255,255,255,0.1);
+        background-color: rgba(255, 255, 255, 0.1);
         border-left: 4px solid white;
     }
 
@@ -74,6 +74,7 @@ body {
         text-align: center;
     }
 
+/* Main Content Area */
 .content-wrapper {
     flex-grow: 1;
     display: flex;
@@ -84,7 +85,7 @@ body {
 .top-bar {
     background: white;
     height: 70px;
-    box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
+    box-shadow: 0 .15rem 1.75rem 0 rgba(58, 59, 69, .15);
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -95,10 +96,11 @@ body {
     padding: 2rem;
 }
 
+/* Utility Classes */
 .card-custom {
     border: none;
     border-radius: 10px;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,.15);
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, .15);
 }
 
 .hidden {
@@ -114,7 +116,7 @@ body {
 
 /* Dashboard Card Borders */
 .border-left-primary {
-    border-left: .25rem solid #4e73df !important;
+    border-left: .25rem solid var(--primary-color) !important;
 }
 
 .border-left-success {

@@ -1,67 +1,86 @@
 ﻿const API_URL = "/api";
 let CURRENT_USER = null;
-let ALL_SHIPMENTS = []; // Global variable to store all fetched shipment data
+let ALL_SHIPMENTS = [];
 
-// ================= LOGIN & LOGOUT =================
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const email = document.getElementById("loginEmail").value;
-    const pass = document.getElementById("loginPassword").value;
-    const errorBox = document.getElementById("loginError");
+// ================= 1. LOGIN & LOGOUT =================
 
-    // Hide old error
-    errorBox.classList.add("hidden");
+const loginForm = document.getElementById("loginForm");
+if (loginForm) {
+    loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const email = document.getElementById("loginEmail").value;
+        const pass = document.getElementById("loginPassword").value;
+        const errorBox = document.getElementById("loginError");
 
-    try {
-        // The quick way: Send credentials to the server for verification
-        const res = await fetch(`${API_URL}/Users/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: email, password: pass })
-        });
+        errorBox.classList.add("hidden");
 
-        if (res.ok) {
-            const user = await res.json();
+        try {
+            const res = await fetch(`${API_URL}/Users/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: email, password: pass })
+            });
 
-            // Successful Login
-            CURRENT_USER = user;
-            document.getElementById("login-screen").classList.add("hidden");
-            document.getElementById("dashboard-screen").style.display = "flex";
-            document.getElementById("dashboard-screen").classList.remove("hidden");
+            if (res.ok) {
+                const user = await res.json();
+                CURRENT_USER = user;
 
-            document.getElementById("userNameDisplay").innerText = `${user.firstName} ${user.lastName}`;
-            document.getElementById("userRoleDisplay").innerText = user.role ? user.role.roleName : "User";
+                // Switch Screens
+                document.getElementById("login-screen").classList.add("hidden");
+                const dashboard = document.getElementById("dashboard-screen");
+                dashboard.classList.remove("hidden");
+                dashboard.style.display = "flex";
 
-            loadAllData();
-        } else {
-            // Login failed (401 Unauthorized)
+                // Set User Info
+                document.getElementById("userNameDisplay").innerText = `${user.firstName} ${user.lastName}`;
+                document.getElementById("userRoleDisplay").innerText = user.role ? user.role.roleName : "User";
+
+                loadAllData();
+            } else {
+                errorBox.classList.remove("hidden");
+                errorBox.innerText = "Incorrect login details!";
+            }
+        } catch (err) {
+            console.error(err);
             errorBox.classList.remove("hidden");
-            errorBox.innerText = "Invalid login credentials!";
+            errorBox.innerText = "Error connecting to the server!";
         }
-    } catch (err) {
-        console.error(err);
-        errorBox.classList.remove("hidden");
-        errorBox.innerText = "Error connecting to the server!";
-    }
-});
+    });
+}
 
 function logout() {
-    // 1. Clear current user data from memory
     CURRENT_USER = null;
 
-    // 2. Hide the dashboard screen
+    // Hide Dashboard
     const dashboard = document.getElementById("dashboard-screen");
     dashboard.classList.add("hidden");
-    dashboard.style.display = "none"; // Ensure it's fully hidden
+    dashboard.style.display = "none";
 
-    // 3. Show the login screen again
+    // Show Login
     const loginScreen = document.getElementById("login-screen");
     loginScreen.classList.remove("hidden");
-    loginScreen.style.display = "flex"; // Restore flex layout
+    loginScreen.style.display = "flex";
 
-    // 4. Reset login form and hide any previous error messages (optional but recommended)
-    document.getElementById("loginForm").reset();
+    // Reset Form
+    if (loginForm) loginForm.reset();
     document.getElementById("loginError").classList.add("hidden");
+}
+
+// ================= 2. NAVIGATION & DATA LOADING =================
+
+function showSection(sectionId) {
+    // Hide all sections
+    document.getElementById("section-logistics").classList.add("hidden");
+    document.getElementById("section-notes").classList.add("hidden");
+    document.getElementById("section-users").classList.add("hidden");
+    document.getElementById("section-branches").classList.add("hidden");
+
+    // Remove active class
+    document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+
+    // Show selected
+    const selectedSection = document.getElementById(`section-${sectionId}`);
+    if (selectedSection) selectedSection.classList.remove("hidden");
 }
 
 function loadAllData() {
@@ -73,76 +92,69 @@ function loadAllData() {
     loadShipmentLookups();
 }
 
-// --- Lookups for Shipment Modal (Branches, Service Types, & Couriers) ---
+// --- Lookups (Dropdowns) ---
 async function loadShipmentLookups() {
-    // 1. Fetch Branches
     try {
-        const res = await fetch(`${API_URL}/Branches`);
-        const branches = await res.json();
-
+        // Branches
+        const resB = await fetch(`${API_URL}/Branches`);
+        const branches = await resB.json();
         const originSel = document.getElementById("sOrigin");
         const destSel = document.getElementById("sDest");
 
-        originSel.innerHTML = "";
-        destSel.innerHTML = "";
+        if (originSel && destSel) {
+            originSel.innerHTML = "";
+            destSel.innerHTML = "";
+            branches.forEach(b => {
+                const opt = `<option value="${b.branchId}">${b.branchName} (${b.city})</option>`;
+                originSel.innerHTML += opt;
+                destSel.innerHTML += opt;
+            });
+        }
 
-        branches.forEach(b => {
-            originSel.innerHTML += `<option value="${b.branchId}">${b.branchName} (${b.city})</option>`;
-            destSel.innerHTML += `<option value="${b.branchId}">${b.branchName} (${b.city})</option>`;
-        });
-
-    } catch (e) { console.error("Error loading branches", e); }
-
-    // 2. Fetch Service Types
-    try {
-        const res = await fetch(`${API_URL}/ServiceTypes`);
-        const types = await res.json();
-
+        // Service Types
+        const resS = await fetch(`${API_URL}/ServiceTypes`);
+        const types = await resS.json();
         const serviceSel = document.getElementById("sService");
-        serviceSel.innerHTML = "";
+        if (serviceSel) {
+            serviceSel.innerHTML = "";
+            types.forEach(t => {
+                serviceSel.innerHTML += `<option value="${t.serviceTypeId}">${t.typeName}</option>`;
+            });
+        }
 
-        types.forEach(t => {
-            serviceSel.innerHTML += `<option value="${t.serviceTypeId}">${t.typeName} - $${t.basePrice}</option>`;
-        });
-
-    } catch (e) { console.error("Error loading service types", e); }
-
-    // 3. Fetch Couriers 
-    try {
-        const res = await fetch(`${API_URL}/Couriers`);
-        const couriers = await res.json();
-
+        // Couriers
+        const resC = await fetch(`${API_URL}/Couriers`);
+        const couriers = await resC.json();
         const courierSel = document.getElementById("sCourier");
-        // Keep the default "Unassigned" option
-        courierSel.innerHTML = '<option value="">-- Unassigned --</option>';
+        if (courierSel) {
+            courierSel.innerHTML = '<option value="">-- Without Courier --</option>';
+            couriers.forEach(c => {
+                const name = c.user ? `${c.user.firstName} ${c.user.lastName}` : `Courier #${c.courierId}`;
+                courierSel.innerHTML += `<option value="${c.courierId}">${name}</option>`;
+            });
+        }
 
-        couriers.forEach(c => {
-            // Access the nested User object for the name
-            const courierName = c.user ? `${c.user.firstName} ${c.user.lastName}` : `Courier #${c.courierId}`;
-            courierSel.innerHTML += `<option value="${c.courierId}">${courierName} (Vehicle: ${c.vehicleType || 'N/A'})</option>`;
-        });
-
-    } catch (e) { console.error("Error loading couriers", e); }
+    } catch (e) { console.error("Error loading lookups", e); }
 }
 
-// ================= SHIPMENTS (CRUD) =================
+// ================= 3. SHIPMENTS LOGIC =================
 
-// Main function to fetch data and save to global variable
 async function getShipments() {
     const res = await fetch(`${API_URL}/Shipments`);
     const data = await res.json();
+    ALL_SHIPMENTS = data;
+    renderShipments(data);
 
-    ALL_SHIPMENTS = data; // Save the original copy
-    renderShipments(data); // Display the data
-
-    // Update Statistics
-    document.getElementById("stat-total-shipments").innerText = data.length;
-    document.getElementById("stat-pending-shipments").innerText = data.filter(s => s.currentStatusId === 5).length;
+    // Stats
+    const totalEl = document.getElementById("stat-total-shipments");
+    const pendingEl = document.getElementById("stat-pending-shipments");
+    if (totalEl) totalEl.innerText = data.length;
+    if (pendingEl) pendingEl.innerText = data.filter(s => s.currentStatusId === 5).length;
 }
 
-// Function to render the table (used by both getShipments and search)
 function renderShipments(data) {
     const tbody = document.getElementById("shipmentsTable");
+    if (!tbody) return;
     tbody.innerHTML = "";
     data.forEach(s => {
         tbody.innerHTML += `
@@ -153,25 +165,35 @@ function renderShipments(data) {
                 <td><span class="badge ${getStatusBadge(s.currentStatusId)}">${getStatusName(s.currentStatusId)}</span></td>
                 <td>${new Date(s.sendingDate).toLocaleDateString()}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-warning btn-action" onclick="openStatusModal(${s.shipmentId})" title="Change Status"><i class="fas fa-truck-loading"></i></button>
-                    <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})"><i class="fas fa-edit"></i></button>
-                    <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})"><i class="fas fa-trash"></i></button>
+                    <button class="btn btn-sm btn-outline-warning btn-action" onclick="openStatusModal(${s.shipmentId})" title="Status"><i class="fas fa-truck-loading"></i></button>
+                    <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})" title="Edit"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})" title="Delete"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>`;
     });
 }
 
-// Open Modal for Add
+// Search
+const searchInput = document.getElementById("searchShipmentInput");
+if (searchInput) {
+    searchInput.addEventListener("keyup", (e) => {
+        const term = e.target.value.toLowerCase();
+        const filtered = ALL_SHIPMENTS.filter(s =>
+            s.description.toLowerCase().includes(term) ||
+            s.shipmentId.toString().includes(term)
+        );
+        renderShipments(filtered);
+    });
+}
+
 function openShipmentModal() {
     document.getElementById("shipmentForm").reset();
     document.getElementById("sId").value = "";
-    document.getElementById("shipmentModalTitle").innerText = "New Shipment";
-    // Crucial: Reload lookups here to ensure new branches/couriers are present
+    document.getElementById("shipmentModalTitle").innerText = "Add New Shipment";
     loadShipmentLookups();
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
 
-// Open Modal for Edit
 async function editShipment(id) {
     const res = await fetch(`${API_URL}/Shipments/${id}`);
     const s = await res.json();
@@ -180,104 +202,84 @@ async function editShipment(id) {
     document.getElementById("sDesc").value = s.description;
     document.getElementById("sWeight").value = s.weight;
 
-    // Set selected values for dropdowns
-    document.getElementById("sOrigin").value = s.originBranchId;
-    document.getElementById("sDest").value = s.destinationBranchId;
-    document.getElementById("sService").value = s.serviceTypeId;
-    // Select the current courier
-    document.getElementById("sCourier").value = s.courierId || "";
+    // Set Dropdowns
+    if (document.getElementById("sOrigin")) document.getElementById("sOrigin").value = s.originBranchId;
+    if (document.getElementById("sDest")) document.getElementById("sDest").value = s.destinationBranchId;
+    if (document.getElementById("sService")) document.getElementById("sService").value = s.serviceTypeId;
+    if (document.getElementById("sCourier")) document.getElementById("sCourier").value = s.courierId || "";
 
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
-    // Crucial: Reload lookups here to ensure new branches/couriers are present
     loadShipmentLookups();
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
 
-// Handle Save (Add or Update)
-document.getElementById("shipmentForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const id = document.getElementById("sId").value;
-    const isEdit = id ? true : false;
+const shipmentForm = document.getElementById("shipmentForm");
+if (shipmentForm) {
+    shipmentForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("sId").value;
+        const isEdit = id ? true : false;
+        const courierVal = document.getElementById("sCourier").value;
 
-    // Get courier value
-    const courierVal = document.getElementById("sCourier").value;
+        const payload = {
+            shipmentId: isEdit ? parseInt(id) : 0,
+            senderId: CURRENT_USER.userId,
+            originBranchId: parseInt(document.getElementById("sOrigin").value),
+            destinationBranchId: parseInt(document.getElementById("sDest").value),
+            serviceTypeId: parseInt(document.getElementById("sService").value),
+            currentStatusId: 5,
+            description: document.getElementById("sDesc").value,
+            weight: parseFloat(document.getElementById("sWeight").value),
+            estimatedDeliveryDate: new Date().toISOString(),
+            courierId: courierVal ? parseInt(courierVal) : null,
+        };
 
-    const payload = {
-        shipmentId: isEdit ? parseInt(id) : 0,
-        senderId: CURRENT_USER.userId,
+        const method = isEdit ? "PUT" : "POST";
+        const url = isEdit ? `${API_URL}/Shipments/${id}` : `${API_URL}/Shipments`;
 
-        originBranchId: parseInt(document.getElementById("sOrigin").value),
-        destinationBranchId: parseInt(document.getElementById("sDest").value),
-        serviceTypeId: parseInt(document.getElementById("sService").value),
+        await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 
-        currentStatusId: 5, // Default to Pending
-        description: document.getElementById("sDesc").value,
-        weight: parseFloat(document.getElementById("sWeight").value),
-        estimatedDeliveryDate: new Date().toISOString(),
-
-        // Add courierId (send null if unassigned)
-        courierId: courierVal ? parseInt(courierVal) : null,
-    };
-
-    const method = isEdit ? "PUT" : "POST";
-    const url = isEdit ? `${API_URL}/Shipments/${id}` : `${API_URL}/Shipments`;
-    await fetch(url, {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+        bootstrap.Modal.getInstance(document.getElementById('shipmentModal')).hide();
+        getShipments();
     });
+}
 
-    bootstrap.Modal.getInstance(document.getElementById('shipmentModal')).hide();
-    getShipments();
-});
-
-// Delete
 async function deleteShipment(id) {
-    if (confirm("Are you sure you want to delete this shipment?")) {
+    if (confirm("Are you sure you want to delete?")) {
         await fetch(`${API_URL}/Shipments/${id}`, { method: "DELETE" });
         getShipments();
     }
 }
 
-// ================= REAL-TIME SEARCH FILTER =================
+// ================= 4. NOTES LOGIC =================
 
-document.getElementById("searchShipmentInput").addEventListener("keyup", (e) => {
-    const term = e.target.value.toLowerCase();
-    const filtered = ALL_SHIPMENTS.filter(s =>
-        // Search by description or shipment ID
-        s.description.toLowerCase().includes(term) ||
-        s.shipmentId.toString().includes(term)
-    );
-    renderShipments(filtered); // Re-render the table with filtered data
-});
-
-// ================= NOTES (CRUD) =================
 async function getNotes() {
     const res = await fetch(`${API_URL}/Notes`);
     const data = await res.json();
-
-    // Update Notes Statistics
-    document.getElementById("stat-total-notes").innerText = data.length;
+    const totalNotesEl = document.getElementById("stat-total-notes");
+    if (totalNotesEl) totalNotesEl.innerText = data.length;
 
     const list = document.getElementById("notesList");
-    list.innerHTML = "";
-    data.forEach(n => {
-        list.innerHTML += `
-            <div class="col-md-4 mb-3">
-                <div class="card card-custom h-100 border-left-success">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <h5 class="card-title text-success">${n.title}</h5>
-                            <div>
-                                <button class="btn btn-sm text-primary" onclick="editNote(${n.noteId})">Edit</button>
-                                <button class="btn btn-sm text-danger" onclick="deleteNote(${n.noteId})">Delete</button>
+    if (list) {
+        list.innerHTML = "";
+        data.forEach(n => {
+            list.innerHTML += `
+                <div class="col-md-4 mb-3">
+                    <div class="card card-custom h-100 border-left-success">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="card-title text-success">${n.title}</h5>
+                                <div>
+                                    <button class="btn btn-sm text-primary" onclick="editNote(${n.noteId})"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm text-danger" onclick="deleteNote(${n.noteId})"><i class="fas fa-trash"></i></button>
+                                </div>
                             </div>
+                            <p class="card-text text-muted">${n.content}</p>
                         </div>
-                        <p class="card-text text-muted">${n.content}</p>
                     </div>
-                </div>
-            </div>`;
-    });
+                </div>`;
+        });
+    }
 }
 
 function openNoteModal() {
@@ -297,87 +299,82 @@ async function editNote(id) {
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
 
-document.getElementById("noteForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const id = document.getElementById("nId").value;
-    const isEdit = id ? true : false;
-    const payload = {
-        noteId: isEdit ? parseInt(id) : 0,
-        userId: CURRENT_USER.userId,
-        title: document.getElementById("nTitle").value,
-        content: document.getElementById("nContent").value
-    };
-    const method = isEdit ? "PUT" : "POST";
-    const url = isEdit ? `${API_URL}/Notes/${id}` : `${API_URL}/Notes`;
-    await fetch(url, {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+const noteForm = document.getElementById("noteForm");
+if (noteForm) {
+    noteForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("nId").value;
+        const isEdit = id ? true : false;
+        const payload = {
+            noteId: isEdit ? parseInt(id) : 0,
+            userId: CURRENT_USER.userId,
+            title: document.getElementById("nTitle").value,
+            content: document.getElementById("nContent").value
+        };
+        const method = isEdit ? "PUT" : "POST";
+        const url = isEdit ? `${API_URL}/Notes/${id}` : `${API_URL}/Notes`;
+
+        await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
+        getNotes();
     });
-    bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
-    getNotes();
-});
+}
 
 async function deleteNote(id) {
-    if (confirm("Delete this note?")) {
+    if (confirm("Delete Note?")) {
         await fetch(`${API_URL}/Notes/${id}`, { method: "DELETE" });
         getNotes();
     }
 }
 
-// ================= USERS (CRUD) =================
+// ================= 5. USERS LOGIC =================
+
 async function getUsers() {
     const res = await fetch(`${API_URL}/Users`);
     const data = await res.json();
     const tbody = document.getElementById("usersTable");
-    tbody.innerHTML = "";
-    data.forEach(u => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${u.userId}</td>
-                <td>${u.firstName} ${u.lastName}</td>
-                <td>${u.email}</td>
-                <td>${u.role?.roleName || '-'}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteUser(${u.userId})">Delete</button>
-                </td>
-            </tr>`;
-    });
+    if (tbody) {
+        tbody.innerHTML = "";
+        data.forEach(u => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${u.userId}</td>
+                    <td>${u.firstName} ${u.lastName}</td>
+                    <td>${u.email}</td>
+                    <td>${u.role?.roleName || '-'}</td>
+                    <td><button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.userId})"><i class="fas fa-trash"></i></button></td>
+                </tr>`;
+        });
+    }
 }
 
 function openUserModal() {
     document.getElementById("userForm").reset();
-    document.getElementById("userModalTitle").innerText = "New User";
     new bootstrap.Modal(document.getElementById('userModal')).show();
 }
 
-// User Save (Add only for simplicity)
-document.getElementById("userForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const payload = {
-        firstName: document.getElementById("uFname").value,
-        lastName: document.getElementById("uLname").value,
-        email: document.getElementById("uEmail").value,
-        passwordHash: document.getElementById("uPass").value || "123456",
-        roleId: parseInt(document.getElementById("uRole").value),
-        phone: "0000000000"
-    };
-
-    const res = await fetch(`${API_URL}/Users`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
+const userForm = document.getElementById("userForm");
+if (userForm) {
+    userForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            firstName: document.getElementById("uFname").value,
+            lastName: document.getElementById("uLname").value,
+            email: document.getElementById("uEmail").value,
+            passwordHash: document.getElementById("uPass").value || "123456",
+            roleId: parseInt(document.getElementById("uRole").value),
+            phone: "0000000000"
+        };
+        const res = await fetch(`${API_URL}/Users`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+            getUsers();
+        } else { alert("Error! Perhaps the email is a duplicate."); }
     });
-    if (res.ok) {
-        bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
-        getUsers();
-    } else {
-        alert("Error! Email might already exist.");
-    }
-});
+}
 
 async function deleteUser(id) {
-    if (confirm("Are you sure? This will delete the user and all their shipments and notes!")) {
+    if (confirm("Deleting the user will delete all their data! Agree?")) {
         await fetch(`${API_URL}/Users/${id}`, { method: "DELETE" });
         getUsers();
     }
@@ -387,11 +384,59 @@ async function getRoles() {
     const res = await fetch(`${API_URL}/Roles`);
     const data = await res.json();
     const sel = document.getElementById("uRole");
-    sel.innerHTML = "";
-    data.forEach(r => sel.innerHTML += `<option value="${r.roleId}">${r.roleName}</option>`);
+    if (sel) {
+        sel.innerHTML = "";
+        data.forEach(r => sel.innerHTML += `<option value="${r.roleId}">${r.roleName}</option>`);
+    }
 }
 
-// ================= STATUS WORKFLOW =================
+// ================= 6. BRANCHES & STATUS LOGIC =================
+
+async function getBranchesTable() {
+    const res = await fetch(`${API_URL}/Branches`);
+    const data = await res.json();
+    const tbody = document.getElementById("branchesTable");
+    if (tbody) {
+        tbody.innerHTML = "";
+        data.forEach(b => {
+            tbody.innerHTML += `<tr><td>${b.branchId}</td><td>${b.branchName}</td><td>${b.city}</td><td>${b.address}</td><td>${b.phone}</td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteBranch(${b.branchId})"><i class="fas fa-trash"></i></button></td></tr>`;
+        });
+    }
+}
+
+function openBranchModal() {
+    document.getElementById("branchForm").reset();
+    new bootstrap.Modal(document.getElementById('branchModal')).show();
+}
+
+const branchForm = document.getElementById("branchForm");
+if (branchForm) {
+    branchForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            branchName: document.getElementById("bName").value,
+            city: document.getElementById("bCity").value,
+            address: document.getElementById("bAddress").value,
+            phone: document.getElementById("bPhone").value
+        };
+        const res = await fetch(`${API_URL}/Branches`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('branchModal')).hide();
+            getBranchesTable();
+            loadShipmentLookups();
+        }
+    });
+}
+
+async function deleteBranch(id) {
+    if (confirm("Delete Branch?")) {
+        await fetch(`${API_URL}/Branches/${id}`, { method: "DELETE" });
+        getBranchesTable();
+        loadShipmentLookups();
+    }
+}
+
+// Status Helpers
 async function openStatusModal(id) {
     document.getElementById("statusShipmentId").value = id;
     const res = await fetch(`${API_URL}/ShipmentStatus`);
@@ -404,101 +449,33 @@ async function openStatusModal(id) {
     new bootstrap.Modal(document.getElementById('statusModal')).show();
 }
 
-document.getElementById("statusForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const id = document.getElementById("statusShipmentId").value;
-    const newStatusId = parseInt(document.getElementById("newStatusSelect").value);
-    const oldRes = await fetch(`${API_URL}/Shipments/${id}`);
-    const shipment = await oldRes.json();
-    shipment.currentStatusId = newStatusId;
-    if (newStatusId === 4) {
-        shipment.deliveredAt = new Date().toISOString();
-    }
-    await fetch(`${API_URL}/Shipments/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(shipment)
+const statusForm = document.getElementById("statusForm");
+if (statusForm) {
+    statusForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const id = document.getElementById("statusShipmentId").value;
+        const newStatusId = parseInt(document.getElementById("newStatusSelect").value);
+
+        const oldRes = await fetch(`${API_URL}/Shipments/${id}`);
+        const shipment = await oldRes.json();
+        shipment.currentStatusId = newStatusId;
+        if (newStatusId === 4) shipment.deliveredAt = new Date().toISOString();
+
+        await fetch(`${API_URL}/Shipments/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(shipment) });
+        bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+        getShipments();
     });
-    bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
-    alert("Shipment status updated successfully!");
-    getShipments();
-});
+}
 
 function getStatusBadge(statusId) {
-    if (statusId === 5) return "bg-warning text-dark"; // Pending
-    if (statusId === 6) return "bg-info text-white";    // Picked Up
-    if (statusId === 7) return "bg-primary";            // In Transit
-    if (statusId === 4) return "bg-success";            // Delivered
+    if (statusId === 5) return "bg-warning text-dark";
+    if (statusId === 6) return "bg-info text-white";
+    if (statusId === 7) return "bg-primary";
+    if (statusId === 4) return "bg-success";
     return "bg-secondary";
 }
 
 function getStatusName(statusId) {
     const names = { 5: "Pending", 6: "Picked Up", 7: "In Transit", 4: "Delivered" };
     return names[statusId] || `Status ${statusId}`;
-}
-
-
-// ================= BRANCHES (CRUD) =================
-
-// 1. Display Branches in the Table
-async function getBranchesTable() {
-    const res = await fetch(`${API_URL}/Branches`);
-    const data = await res.json();
-    const tbody = document.getElementById("branchesTable");
-    tbody.innerHTML = "";
-    data.forEach(b => {
-        tbody.innerHTML += `
-            <tr>
-                <td>${b.branchId}</td>
-                <td><strong>${b.branchName}</strong></td>
-                <td><span class="badge bg-info text-dark">${b.city}</span></td>
-                <td>${b.address}</td>
-                <td>${b.phone}</td>
-                <td>
-                    <button class="btn btn-sm btn-outline-danger" onclick="deleteBranch(${b.branchId})"><i class="fas fa-trash"></i></button>
-                </td>
-            </tr>`;
-    });
-}
-
-// 2. Open the Modal
-function openBranchModal() {
-    document.getElementById("branchForm").reset();
-    new bootstrap.Modal(document.getElementById('branchModal')).show();
-}
-
-// 3. Save New Branch
-document.getElementById("branchForm").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const payload = {
-        branchName: document.getElementById("bName").value,
-        city: document.getElementById("bCity").value,
-        address: document.getElementById("bAddress").value,
-        phone: document.getElementById("bPhone").value
-    };
-
-    const res = await fetch(`${API_URL}/Branches`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload)
-    });
-
-    if (res.ok) {
-        bootstrap.Modal.getInstance(document.getElementById('branchModal')).hide();
-        alert("Branch added successfully!");
-        getBranchesTable(); // Update the branches table
-        loadShipmentLookups(); // Crucial: Update the dropdowns in the Shipment modal
-    } else {
-        alert("An error occurred during addition. Status: " + res.status);
-    }
-});
-
-// 4. Delete Branch
-async function deleteBranch(id) {
-    if (confirm("Warning: Deleting a branch may cause issues with associated shipments! Are you sure?")) {
-        await fetch(`${API_URL}/Branches/${id}`, { method: "DELETE" });
-        getBranchesTable();
-        loadShipmentLookups(); // Crucial: Update the dropdowns in the Shipment modal
-    }
 }
