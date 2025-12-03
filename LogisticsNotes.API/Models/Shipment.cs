@@ -67,4 +67,9 @@ public partial class Shipment
     [ForeignKey("ServiceTypeId")]
     [InverseProperty("Shipments")]
     public virtual ServiceType? ServiceType { get; set; }
+    public int? CourierId { get; set; } 
+
+    [ForeignKey("CourierId")]
+    [InverseProperty("Shipments")]
+    public virtual Courier? Courier { get; set; } // علاقة الربط
 }

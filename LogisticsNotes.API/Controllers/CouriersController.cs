@@ -24,7 +24,7 @@ namespace LogisticsNotes.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Courier>>> GetCouriers()
         {
-            return await _context.Couriers.ToListAsync();
+            return await _context.Couriers.Include(c => c.User).ToListAsync();
         }
 
         // GET: api/Couriers/5
