@@ -8,13 +8,22 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
     const email = document.getElementById("loginEmail").value;
     const pass = document.getElementById("loginPassword").value;
     const errorBox = document.getElementById("loginError");
-    try {
-        const res = await fetch(`${API_URL}/Users`);
-        const users = await res.json();
 
-        // Simple Login Check (For Demo)
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.passwordHash === pass);
-        if (user) {
+    // Hide old error
+    errorBox.classList.add("hidden");
+
+    try {
+        // The quick way: Send credentials to the server for verification
+        const res = await fetch(`${API_URL}/Users/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email, password: pass })
+        });
+
+        if (res.ok) {
+            const user = await res.json();
+
+            // Successful Login
             CURRENT_USER = user;
             document.getElementById("login-screen").classList.add("hidden");
             document.getElementById("dashboard-screen").style.display = "flex";
@@ -25,16 +34,19 @@ document.getElementById("loginForm").addEventListener("submit", async (e) => {
 
             loadAllData();
         } else {
+            // Login failed (401 Unauthorized)
             errorBox.classList.remove("hidden");
+            errorBox.innerText = "Invalid login credentials!";
         }
     } catch (err) {
         console.error(err);
-        alert("Make sure the backend server is running!");
+        errorBox.classList.remove("hidden");
+        errorBox.innerText = "Error connecting to the server!";
     }
 });
 
 function logout() {
-    location.reload();
+    // ... (rest of the file remains the same, but I will provide the full update for completeness)
 }
 
 function showSection(sectionId) {
@@ -92,7 +104,7 @@ async function loadShipmentLookups() {
 
     } catch (e) { console.error("Error loading service types", e); }
 
-    // 3. Fetch Couriers (NEW)
+    // 3. Fetch Couriers 
     try {
         const res = await fetch(`${API_URL}/Couriers`);
         const couriers = await res.json();
@@ -169,7 +181,7 @@ async function editShipment(id) {
     document.getElementById("sOrigin").value = s.originBranchId;
     document.getElementById("sDest").value = s.destinationBranchId;
     document.getElementById("sService").value = s.serviceTypeId;
-    // NEW: Select the current courier
+    // Select the current courier
     document.getElementById("sCourier").value = s.courierId || "";
 
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
@@ -184,7 +196,7 @@ document.getElementById("shipmentForm").addEventListener("submit", async (e) => 
     const id = document.getElementById("sId").value;
     const isEdit = id ? true : false;
 
-    // NEW: Get courier value
+    // Get courier value
     const courierVal = document.getElementById("sCourier").value;
 
     const payload = {
@@ -200,7 +212,7 @@ document.getElementById("shipmentForm").addEventListener("submit", async (e) => 
         weight: parseFloat(document.getElementById("sWeight").value),
         estimatedDeliveryDate: new Date().toISOString(),
 
-        // NEW: Add courierId (send null if unassigned)
+        // Add courierId (send null if unassigned)
         courierId: courierVal ? parseInt(courierVal) : null,
     };
 
