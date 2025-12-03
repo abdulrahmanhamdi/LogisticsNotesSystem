@@ -65,7 +65,6 @@
             </div>
 
             <div class="main-content">
-                <!-- Logistics Section -->
                 <div id="section-logistics">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Shipments Management</h4>
@@ -92,7 +91,6 @@
                     </div>
                 </div>
 
-                <!-- Notes Section -->
                 <div id="section-notes" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">My Personal Notes</h4>
@@ -103,7 +101,6 @@
                     <div class="row" id="notesList"></div>
                 </div>
 
-                <!-- Users Section -->
                 <div id="section-users" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Users List</h4>
@@ -132,7 +129,6 @@
         </div>
     </div>
 
-    <!-- Shipment Modal -->
     <div class="modal fade" id="shipmentModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -143,22 +139,41 @@
                 <div class="modal-body">
                     <form id="shipmentForm">
                         <input type="hidden" id="sId">
+
                         <div class="mb-3">
-                            <label>Description</label>
-                            <input type="text" class="form-control" id="sDesc" required>
+                            <label>Shipment Description</label>
+                            <input type="text" class="form-control" id="sDesc" required placeholder="e.g., Official Documents">
                         </div>
-                        <div class="mb-3">
-                            <label>Weight (KG)</label>
-                            <input type="number" class="form-control" id="sWeight" value="1" step="0.1" required>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Origin Branch (From)</label>
+                                <select class="form-select" id="sOrigin" required></select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Destination Branch (To)</label>
+                                <select class="form-select" id="sDest" required></select>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100">Save</button>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Service Type</label>
+                                <select class="form-select" id="sService" required></select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Weight (KG)</label>
+                                <input type="number" class="form-control" id="sWeight" value="1" step="0.1" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100">Save Shipment</button>
                     </form>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Note Modal -->
     <div class="modal fade" id="noteModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -184,7 +199,6 @@
         </div>
     </div>
 
-    <!-- User Modal -->
     <div class="modal fade" id="userModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">

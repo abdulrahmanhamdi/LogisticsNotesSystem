@@ -52,6 +52,45 @@ function loadAllData() {
     getNotes();
     getUsers();
     getRoles();
+    loadShipmentLookups(); // <--- NEW: Load branches and services
+}
+
+// --- Lookups for Shipment Modal (Branches & Service Types) ---
+async function loadShipmentLookups() {
+    // 1. Fetch Branches
+    try {
+        const res = await fetch(`${API_URL}/Branches`);
+        const branches = await res.json();
+
+        const originSel = document.getElementById("sOrigin");
+        const destSel = document.getElementById("sDest");
+
+        // Clear previous options
+        originSel.innerHTML = "";
+        destSel.innerHTML = "";
+
+        branches.forEach(b => {
+            // Populate Origin list
+            originSel.innerHTML += `<option value="${b.branchId}">${b.branchName} (${b.city})</option>`;
+            // Populate Destination list
+            destSel.innerHTML += `<option value="${b.branchId}">${b.branchName} (${b.city})</option>`;
+        });
+
+    } catch (e) { console.error("Error loading branches", e); }
+
+    // 2. Fetch Service Types
+    try {
+        const res = await fetch(`${API_URL}/ServiceTypes`);
+        const types = await res.json();
+
+        const serviceSel = document.getElementById("sService");
+        serviceSel.innerHTML = "";
+
+        types.forEach(t => {
+            serviceSel.innerHTML += `<option value="${t.serviceTypeId}">${t.typeName} - $${t.basePrice}</option>`;
+        });
+
+    } catch (e) { console.error("Error loading service types", e); }
 }
 
 // ================= SHIPMENTS (CRUD) =================
@@ -92,6 +131,11 @@ async function editShipment(id) {
     document.getElementById("sId").value = s.shipmentId;
     document.getElementById("sDesc").value = s.description;
     document.getElementById("sWeight").value = s.weight;
+    // Set selected values for dropdowns on edit (assuming data includes these IDs)
+    document.getElementById("sOrigin").value = s.originBranchId;
+    document.getElementById("sDest").value = s.destinationBranchId;
+    document.getElementById("sService").value = s.serviceTypeId;
+
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
 
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
@@ -106,10 +150,13 @@ document.getElementById("shipmentForm").addEventListener("submit", async (e) => 
     const payload = {
         shipmentId: isEdit ? parseInt(id) : 0,
         senderId: CURRENT_USER.userId,
-        originBranchId: 1,
-        destinationBranchId: 1,
-        serviceTypeId: 1,
-        currentStatusId: 5,
+
+        // UPDATED: Reading values from the dynamic dropdowns
+        originBranchId: parseInt(document.getElementById("sOrigin").value),
+        destinationBranchId: parseInt(document.getElementById("sDest").value),
+        serviceTypeId: parseInt(document.getElementById("sService").value),
+
+        currentStatusId: 5, // Status remains Pending by default
         description: document.getElementById("sDesc").value,
         weight: parseFloat(document.getElementById("sWeight").value),
         estimatedDeliveryDate: new Date().toISOString()
