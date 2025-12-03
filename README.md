@@ -56,9 +56,13 @@ Both modules operate on a shared **centralized database** and **user management 
 
 The database **LogisticsNotesDB** contains **18 relational tables** designed following **Third Normal Form (3NF)**.
 
-Include your ER Diagram here:
+Include your ER Diagram and Logic ERD here:
 
 ![ER Diagram](./ER_Diagram.png)
+
+![Tables Diagram](./Tables_Diagram1)
+
+![Tables Diagram](./Tables_Diagram2)
 
 ---
 
