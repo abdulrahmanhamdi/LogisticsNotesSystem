@@ -45,7 +45,7 @@ public partial class User
 
     [ForeignKey("RoleId")]
     [InverseProperty("Users")]
-    public virtual Role Role { get; set; } = null!;
+    public virtual Role? Role { get; set; }
 
     [InverseProperty("SharedWithUser")]
     public virtual ICollection<SharedNote> SharedNotes { get; set; } = new List<SharedNote>();

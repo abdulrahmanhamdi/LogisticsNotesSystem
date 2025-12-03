@@ -44,27 +44,27 @@ public partial class Shipment
 
     [ForeignKey("CurrentStatusId")]
     [InverseProperty("Shipments")]
-    public virtual ShipmentStatus CurrentStatus { get; set; } = null!;
+    public virtual ShipmentStatus? CurrentStatus { get; set; }
 
     [InverseProperty("Shipment")]
     public virtual ICollection<DeliveryHistory> DeliveryHistories { get; set; } = new List<DeliveryHistory>();
 
     [ForeignKey("DestinationBranchId")]
     [InverseProperty("ShipmentDestinationBranches")]
-    public virtual Branch DestinationBranch { get; set; } = null!;
+    public virtual Branch? DestinationBranch { get; set; }
 
     [ForeignKey("OriginBranchId")]
     [InverseProperty("ShipmentOriginBranches")]
-    public virtual Branch OriginBranch { get; set; } = null!;
+    public virtual Branch? OriginBranch { get; set; }
 
     [InverseProperty("Shipment")]
     public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
 
     [ForeignKey("SenderId")]
     [InverseProperty("Shipments")]
-    public virtual User Sender { get; set; } = null!;
+    public virtual User? Sender { get; set; }
 
     [ForeignKey("ServiceTypeId")]
     [InverseProperty("Shipments")]
-    public virtual ServiceType ServiceType { get; set; } = null!;
+    public virtual ServiceType? ServiceType { get; set; }
 }
