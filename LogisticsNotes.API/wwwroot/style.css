@@ -16,20 +16,17 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    /* التعديل 1: استخدام صورة الخلفية مع طبقة زرقاء داكنة شفافة */
-    background-image: linear-gradient(rgba(10, 25, 60, 0.8), rgba(10, 25, 60, 0.8)), url('image_f1d935.jpg');
+    background-image: url('sonbahar.webp');
     background-size: cover;
     background-position: center;
-    background-attachment: fixed; /* لمسة إضافية لثبات الخلفية عند التحريك (اختياري) */
+    background-attachment: fixed;
 }
 
 .login-card {
     width: 400px;
-    /* التعديل 2: جعل الزوايا أكثر انحناءً (Rounded) */
     border-radius: 25px;
     background: white;
     padding: 2rem;
-    /* التعديل 3: ظل عائم (Floating Shadow) وأكثر نعومة ووضوحًا */
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25), 0 5px 15px rgba(0, 0, 0, 0.1);
 }
 
