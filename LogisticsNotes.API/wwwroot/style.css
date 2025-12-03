@@ -1,0 +1,128 @@
+﻿:root {
+    --primary-color: #4e73df;
+    --secondary-color: #858796;
+    --success-color: #1cc88a;
+    --info-color: #36b9cc;
+    --warning-color: #f6c23e;
+    --danger-color: #e74a3b;
+    --sidebar-width: 250px;
+}
+
+body {
+    font-family: 'Nunito', sans-serif;
+    background-color: #f8f9fc;
+    overflow-x: hidden;
+}
+
+/* Login Screen Styles */
+#login-screen {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #4e73df 10%, #224abe 100%);
+}
+
+.login-card {
+    width: 400px;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    background: white;
+    padding: 2rem;
+}
+
+/* Dashboard Styles */
+#dashboard-screen {
+    display: none; /* Hidden by default */
+    display: flex;
+    height: 100vh;
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: #4e73df;
+    background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    transition: 0.3s;
+}
+
+.sidebar-brand {
+    padding: 1.5rem;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
+.nav-item {
+    padding: 1rem 1.5rem;
+    color: rgba(255,255,255,0.8);
+    cursor: pointer;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    transition: 0.2s;
+}
+
+    .nav-item:hover, .nav-item.active {
+        color: white;
+        background-color: rgba(255,255,255,0.1);
+        border-left: 4px solid white;
+    }
+
+    .nav-item i {
+        margin-right: 10px;
+        width: 20px;
+        text-align: center;
+    }
+
+.content-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+}
+
+.top-bar {
+    background: white;
+    height: 70px;
+    box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 2rem;
+}
+
+.main-content {
+    padding: 2rem;
+}
+
+.card-custom {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,.15);
+    transition: transform 0.2s;
+}
+
+    .card-custom:hover {
+        transform: translateY(-5px);
+    }
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(45deg, #4e73df, #224abe);
+    color: white;
+}
+
+.bg-gradient-success {
+    background: linear-gradient(45deg, #1cc88a, #13855c);
+    color: white;
+}
