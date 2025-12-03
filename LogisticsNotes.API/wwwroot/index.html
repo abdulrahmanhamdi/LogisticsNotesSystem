@@ -118,9 +118,12 @@
                     </div>
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Shipments Management</h4>
-                        <button class="btn btn-primary shadow" onclick="openShipmentModal()">
-                            <i class="fas fa-plus"></i> New Shipment
-                        </button>
+                        <div class="d-flex gap-2">
+                            <input type="text" id="searchShipmentInput" class="form-control" placeholder="Search Shipment (ID or Description)...">
+                            <button class="btn btn-primary shadow" onclick="openShipmentModal()">
+                                <i class="fas fa-plus"></i> New Shipment
+                            </button>
+                        </div>
                     </div>
                     <div class="card card-custom">
                         <div class="card-body">

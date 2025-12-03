@@ -1,5 +1,6 @@
 ﻿const API_URL = "/api";
 let CURRENT_USER = null;
+let ALL_SHIPMENTS = []; // Global variable to store all fetched shipment data
 
 // ================= LOGIN & LOGOUT =================
 document.getElementById("loginForm").addEventListener("submit", async (e) => {
@@ -91,20 +92,25 @@ async function loadShipmentLookups() {
 }
 
 // ================= SHIPMENTS (CRUD) =================
+
+// Main function to fetch data and save to global variable
 async function getShipments() {
     const res = await fetch(`${API_URL}/Shipments`);
     const data = await res.json();
 
-    // Update Shipments Statistics
-    document.getElementById("stat-total-shipments").innerText = data.length;
-    // Assuming status ID 5 is Pending
-    const pendingCount = data.filter(s => s.currentStatusId === 5).length;
-    document.getElementById("stat-pending-shipments").innerText = pendingCount;
+    ALL_SHIPMENTS = data; // Save the original copy
+    renderShipments(data); // Display the data
 
+    // Update Statistics
+    document.getElementById("stat-total-shipments").innerText = data.length;
+    document.getElementById("stat-pending-shipments").innerText = data.filter(s => s.currentStatusId === 5).length;
+}
+
+// Function to render the table (used by both getShipments and search)
+function renderShipments(data) {
     const tbody = document.getElementById("shipmentsTable");
     tbody.innerHTML = "";
     data.forEach(s => {
-        // --- UPDATED: Use helper functions for Status Name and Badge ---
         tbody.innerHTML += `
             <tr>
                 <td>#${s.shipmentId}</td>
@@ -118,7 +124,6 @@ async function getShipments() {
                     <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>`;
-        // ----------------------------------------------------------------
     });
 }
 
@@ -186,6 +191,18 @@ async function deleteShipment(id) {
         getShipments();
     }
 }
+
+// ================= REAL-TIME SEARCH FILTER =================
+
+document.getElementById("searchShipmentInput").addEventListener("keyup", (e) => {
+    const term = e.target.value.toLowerCase();
+    const filtered = ALL_SHIPMENTS.filter(s =>
+        // Search by description or shipment ID
+        s.description.toLowerCase().includes(term) ||
+        s.shipmentId.toString().includes(term)
+    );
+    renderShipments(filtered); // Re-render the table with filtered data
+});
 
 // ================= NOTES (CRUD) =================
 async function getNotes() {
@@ -327,14 +344,14 @@ async function getRoles() {
     data.forEach(r => sel.innerHTML += `<option value="${r.roleId}">${r.roleName}</option>`);
 }
 
-// ================= STATUS WORKFLOW =================
+// ================= STATUS WORKFLOW (UNCHANGED) =================
 
 // 1. Open Status Modal and populate dropdown
 async function openStatusModal(id) {
     document.getElementById("statusShipmentId").value = id;
 
     // Fetch available statuses from the server
-    const res = await fetch(`${API_URL}/ShipmentStatus`); // *Check your Controller name here*
+    const res = await fetch(`${API_URL}/ShipmentStatus`);
     const statuses = await res.json();
 
     const sel = document.getElementById("newStatusSelect");
@@ -360,7 +377,7 @@ document.getElementById("statusForm").addEventListener("submit", async (e) => {
     shipment.currentStatusId = newStatusId;
 
     // If the status is "Delivered" (ID 4 in this example), update the delivery date
-    if (newStatusId === 4) { // *Confirm the 'Delivered' status ID from your DB*
+    if (newStatusId === 4) {
         shipment.deliveredAt = new Date().toISOString();
     }
 
@@ -373,13 +390,11 @@ document.getElementById("statusForm").addEventListener("submit", async (e) => {
 
     bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
     alert("Shipment status updated successfully!");
-    getShipments(); // Refresh the table
+    getShipments(); // Refresh the table and statistics
 });
 
 // 3. Helper Functions for Status Display
-
 function getStatusBadge(statusId) {
-    // Different colors based on status (IDs are examples)
     if (statusId === 5) return "bg-warning text-dark"; // Pending
     if (statusId === 6) return "bg-info text-white";    // Picked Up
     if (statusId === 7) return "bg-primary";            // In Transit
@@ -388,7 +403,6 @@ function getStatusBadge(statusId) {
 }
 
 function getStatusName(statusId) {
-    // Hardcoded names for presentation (ideally should come with the shipment object from API)
     const names = { 5: "Pending", 6: "Picked Up", 7: "In Transit", 4: "Delivered" };
     return names[statusId] || `Status ${statusId}`;
 }
