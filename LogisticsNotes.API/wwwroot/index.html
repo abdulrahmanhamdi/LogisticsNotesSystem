@@ -1,0 +1,231 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام الإدارة المتكامل | Logistics & Notes</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .card {
+            margin-top: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: none;
+        }
+
+        .nav-tabs .nav-link.active {
+            background-color: #0d6efd;
+            color: white;
+        }
+
+        .nav-link {
+            color: #495057;
+            font-weight: bold;
+        }
+
+        .header-title {
+            padding: 20px;
+            text-align: center;
+            color: #0d6efd;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2 class="header-title">نظام الإدارة المتكامل (Integrated System)</h2>
+
+        <div class="alert alert-info d-flex justify-content-between align-items-center">
+            <span><strong>المستخدم الحالي:</strong> Ahmed Yilmaz (User ID: 1)</span>
+            <button class="btn btn-sm btn-outline-primary" onclick="loadData()">تحديث البيانات</button>
+        </div>
+
+        <ul class="nav nav-tabs nav-fill" id="myTab" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="logistics-tab" data-bs-toggle="tab" data-bs-target="#logistics" type="button">🚚 نظام الشحن (Logistics)</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button">📝 الملاحظات (Notes)</button>
+            </li>
+        </ul>
+
+        <div class="tab-content" id="myTabContent">
+
+            <div class="tab-pane fade show active" id="logistics" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card p-3">
+                            <h5>إضافة شحنة جديدة</h5>
+                            <form id="shipmentForm">
+                                <div class="mb-2">
+                                    <label>وصف الشحنة</label>
+                                    <input type="text" class="form-control" id="desc" placeholder="مثلاً: لابتوب" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label>الوزن (KG)</label>
+                                    <input type="number" class="form-control" id="weight" value="1.0" step="0.1">
+                                </div>
+                                <input type="hidden" id="senderId" value="1">
+                                <input type="hidden" id="originId" value="1">
+                                <input type="hidden" id="destId" value="1">
+                                <input type="hidden" id="serviceId" value="1">
+                                <input type="hidden" id="statusId" value="5"> <button type="submit" class="btn btn-primary w-100">إرسال الشحنة</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="card p-3">
+                            <h5>شحناتي (My Shipments)</h5>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>#ID</th>
+                                        <th>الوصف</th>
+                                        <th>الوزن</th>
+                                        <th>الحالة</th>
+                                        <th>تاريخ الإرسال</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="shipmentsTable">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="notes" role="tabpanel">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card p-3">
+                            <h5>تدوين ملاحظة</h5>
+                            <form id="noteForm">
+                                <div class="mb-2">
+                                    <label>العنوان</label>
+                                    <input type="text" class="form-control" id="noteTitle" placeholder="عنوان الملاحظة" required>
+                                </div>
+                                <div class="mb-2">
+                                    <label>المحتوى</label>
+                                    <textarea class="form-control" id="noteContent" rows="3" required></textarea>
+                                </div>
+                                <input type="hidden" id="noteUserId" value="1">
+                                <button type="submit" class="btn btn-success w-100">حفظ الملاحظة</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div class="col-md-8">
+                        <div class="card p-3">
+                            <h5>ملاحظاتي (My Notes)</h5>
+                            <div id="notesList" class="row">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // URL الخاصة بال API - تأكد من البورت 7281
+    const API_URL = "/api";
+
+    // 1. Fetch Shipments
+    async function getShipments() {
+        try {
+            const res = await fetch(`${API_URL}/Shipments`);
+            const data = await res.json();
+            const tbody = document.getElementById("shipmentsTable");
+            tbody.innerHTML = "";
+            data.forEach(ship => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${ship.shipmentId}</td>
+                        <td>${ship.description}</td>
+                        <td>${ship.weight} KG</td>
+                        <td><span class="badge bg-warning text-dark">Pending (ID:${ship.currentStatusId})</span></td>
+                        <td>${new Date(ship.sendingDate).toLocaleDateString()}</td>
+                    </tr>
+                `;
+            });
+        } catch (err) { console.error("Error fetching shipments:", err); }
+    }
+
+    // 2. Add Shipment
+    document.getElementById("shipmentForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            senderId: 1, // Ahmed
+            originBranchId: 1,
+            destinationBranchId: 1,
+            serviceTypeId: 1,
+            currentStatusId: 5, // Pending
+            weight: parseFloat(document.getElementById("weight").value),
+            description: document.getElementById("desc").value,
+            estimatedDeliveryDate: new Date().toISOString()
+        };
+
+        await fetch(`${API_URL}/Shipments`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        alert("تم إضافة الشحنة بنجاح!");
+        getShipments(); // Refresh list
+    });
+
+    // 3. Fetch Notes
+    async function getNotes() {
+        try {
+            const res = await fetch(`${API_URL}/Notes`);
+            const data = await res.json();
+            const container = document.getElementById("notesList");
+            container.innerHTML = "";
+            data.forEach(note => {
+                container.innerHTML += `
+                    <div class="col-md-6 mb-2">
+                        <div class="card p-2 bg-light">
+                            <strong>${note.title}</strong>
+                            <p class="small text-muted mb-0">${note.content}</p>
+                        </div>
+                    </div>
+                `;
+            });
+        } catch (err) { console.error("Error fetching notes:", err); }
+    }
+
+    // 4. Add Note
+    document.getElementById("noteForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            userId: 1, // Ahmed
+            title: document.getElementById("noteTitle").value,
+            content: document.getElementById("noteContent").value
+        };
+
+        await fetch(`${API_URL}/Notes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+        alert("تم حفظ الملاحظة!");
+        getNotes(); // Refresh
+    });
+
+    // Initial Load
+    function loadData() {
+        getShipments();
+        getNotes();
+    }
+    loadData();
+    </script>
+
+</body>
+</html>
