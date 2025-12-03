@@ -28,10 +28,13 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
-
 app.UseCors("AllowAll");
 
+// Serve index.html automatically and enable static files from wwwroot
+app.UseDefaultFiles();
+app.UseStaticFiles();
+
+app.UseHttpsRedirection();
 app.UseAuthorization();
 
 app.MapControllers();
