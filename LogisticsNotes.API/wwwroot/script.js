@@ -65,14 +65,11 @@ async function loadShipmentLookups() {
         const originSel = document.getElementById("sOrigin");
         const destSel = document.getElementById("sDest");
 
-        // Clear previous options
         originSel.innerHTML = "";
         destSel.innerHTML = "";
 
         branches.forEach(b => {
-            // Populate Origin list
             originSel.innerHTML += `<option value="${b.branchId}">${b.branchName} (${b.city})</option>`;
-            // Populate Destination list
             destSel.innerHTML += `<option value="${b.branchId}">${b.branchName} (${b.city})</option>`;
         });
 
@@ -98,35 +95,37 @@ async function getShipments() {
     const res = await fetch(`${API_URL}/Shipments`);
     const data = await res.json();
 
-    // --- UPDATED: Update Shipments Statistics ---
+    // Update Shipments Statistics
     document.getElementById("stat-total-shipments").innerText = data.length;
-    // Calculate pending shipments (assuming status ID 5 is Pending)
+    // Assuming status ID 5 is Pending
     const pendingCount = data.filter(s => s.currentStatusId === 5).length;
     document.getElementById("stat-pending-shipments").innerText = pendingCount;
-    // -------------------------------------------
 
     const tbody = document.getElementById("shipmentsTable");
     tbody.innerHTML = "";
     data.forEach(s => {
+        // --- UPDATED: Use helper functions for Status Name and Badge ---
         tbody.innerHTML += `
             <tr>
                 <td>#${s.shipmentId}</td>
                 <td>${s.description}</td>
                 <td>${s.weight} KG</td>
-                <td><span class="badge bg-warning text-dark">Pending</span></td>
+                <td><span class="badge ${getStatusBadge(s.currentStatusId)}">${getStatusName(s.currentStatusId)}</span></td>
                 <td>${new Date(s.sendingDate).toLocaleDateString()}</td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})">Edit</button>
-                    <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})">Delete</button>
+                    <button class="btn btn-sm btn-outline-warning btn-action" onclick="openStatusModal(${s.shipmentId})" title="Change Status"><i class="fas fa-truck-loading"></i></button>
+                    <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})"><i class="fas fa-trash"></i></button>
                 </td>
             </tr>`;
+        // ----------------------------------------------------------------
     });
 }
 
 // Open Modal for Add
 function openShipmentModal() {
     document.getElementById("shipmentForm").reset();
-    document.getElementById("sId").value = ""; // Clear ID for new
+    document.getElementById("sId").value = "";
     document.getElementById("shipmentModalTitle").innerText = "New Shipment";
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
@@ -136,16 +135,14 @@ async function editShipment(id) {
     const res = await fetch(`${API_URL}/Shipments/${id}`);
     const s = await res.json();
 
-    // Populate text fields
     document.getElementById("sId").value = s.shipmentId;
     document.getElementById("sDesc").value = s.description;
     document.getElementById("sWeight").value = s.weight;
 
-    // --- NEW FIX: Set selected values for dropdowns ---
+    // Set selected values for dropdowns
     document.getElementById("sOrigin").value = s.originBranchId;
     document.getElementById("sDest").value = s.destinationBranchId;
     document.getElementById("sService").value = s.serviceTypeId;
-    // ------------------------------------------------
 
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
@@ -165,7 +162,7 @@ document.getElementById("shipmentForm").addEventListener("submit", async (e) => 
         destinationBranchId: parseInt(document.getElementById("sDest").value),
         serviceTypeId: parseInt(document.getElementById("sService").value),
 
-        currentStatusId: 5, // Status remains Pending by default
+        currentStatusId: 5, // Default to Pending
         description: document.getElementById("sDesc").value,
         weight: parseFloat(document.getElementById("sWeight").value),
         estimatedDeliveryDate: new Date().toISOString()
@@ -195,9 +192,8 @@ async function getNotes() {
     const res = await fetch(`${API_URL}/Notes`);
     const data = await res.json();
 
-    // --- UPDATED: Update Notes Statistics ---
+    // Update Notes Statistics
     document.getElementById("stat-total-notes").innerText = data.length;
-    // ----------------------------------------
 
     const list = document.getElementById("notesList");
     list.innerHTML = "";
@@ -329,4 +325,70 @@ async function getRoles() {
     const sel = document.getElementById("uRole");
     sel.innerHTML = "";
     data.forEach(r => sel.innerHTML += `<option value="${r.roleId}">${r.roleName}</option>`);
+}
+
+// ================= STATUS WORKFLOW =================
+
+// 1. Open Status Modal and populate dropdown
+async function openStatusModal(id) {
+    document.getElementById("statusShipmentId").value = id;
+
+    // Fetch available statuses from the server
+    const res = await fetch(`${API_URL}/ShipmentStatus`); // *Check your Controller name here*
+    const statuses = await res.json();
+
+    const sel = document.getElementById("newStatusSelect");
+    sel.innerHTML = "";
+    statuses.forEach(st => {
+        sel.innerHTML += `<option value="${st.statusId}">${st.statusName}</option>`;
+    });
+
+    new bootstrap.Modal(document.getElementById('statusModal')).show();
+}
+
+// 2. Handle Status Update Submission
+document.getElementById("statusForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const id = document.getElementById("statusShipmentId").value;
+    const newStatusId = parseInt(document.getElementById("newStatusSelect").value);
+
+    // Fetch the old shipment object to perform a full PUT update
+    const oldRes = await fetch(`${API_URL}/Shipments/${id}`);
+    const shipment = await oldRes.json();
+
+    // Update the status
+    shipment.currentStatusId = newStatusId;
+
+    // If the status is "Delivered" (ID 4 in this example), update the delivery date
+    if (newStatusId === 4) { // *Confirm the 'Delivered' status ID from your DB*
+        shipment.deliveredAt = new Date().toISOString();
+    }
+
+    // Send the update (using PUT to replace the whole object)
+    await fetch(`${API_URL}/Shipments/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(shipment)
+    });
+
+    bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+    alert("Shipment status updated successfully!");
+    getShipments(); // Refresh the table
+});
+
+// 3. Helper Functions for Status Display
+
+function getStatusBadge(statusId) {
+    // Different colors based on status (IDs are examples)
+    if (statusId === 5) return "bg-warning text-dark"; // Pending
+    if (statusId === 6) return "bg-info text-white";    // Picked Up
+    if (statusId === 7) return "bg-primary";            // In Transit
+    if (statusId === 4) return "bg-success";            // Delivered
+    return "bg-secondary";
+}
+
+function getStatusName(statusId) {
+    // Hardcoded names for presentation (ideally should come with the shipment object from API)
+    const names = { 5: "Pending", 6: "Picked Up", 7: "In Transit", 4: "Delivered" };
+    return names[statusId] || `Status ${statusId}`;
 }
