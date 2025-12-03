@@ -28,5 +28,5 @@ public partial class Folder
 
     [ForeignKey("UserId")]
     [InverseProperty("Folders")]
-    public virtual User User { get; set; } = null!;
+    public virtual User? User { get; set; }
 }
