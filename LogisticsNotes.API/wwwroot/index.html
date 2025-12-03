@@ -1,231 +1,520 @@
 ﻿<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام الإدارة المتكامل | Logistics & Notes</title>
+    <title>Logistics & Notes System | Login</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
     <style>
+        :root {
+            --primary-color: #4e73df;
+            --secondary-color: #858796;
+            --success-color: #1cc88a;
+            --info-color: #36b9cc;
+            --warning-color: #f6c23e;
+            --danger-color: #e74a3b;
+            --sidebar-width: 250px;
+        }
+
         body {
-            background-color: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Nunito', sans-serif;
+            background-color: #f8f9fc;
+            overflow-x: hidden;
         }
 
-        .card {
-            margin-top: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        /* Login Screen Styles */
+        #login-screen {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #4e73df 10%, #224abe 100%);
+        }
+
+        .login-card {
+            width: 400px;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            background: white;
+            padding: 2rem;
+        }
+
+        /* Dashboard Styles */
+        #dashboard-screen {
+            display: none; /* Hidden by default */
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: #4e73df;
+            background-image: linear-gradient(180deg, #4e73df 10%, #224abe 100%);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            transition: 0.3s;
+        }
+
+        .sidebar-brand {
+            padding: 1.5rem;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-bottom: 1px solid rgba(255,255,255,0.15);
+        }
+
+        .nav-item {
+            padding: 1rem 1.5rem;
+            color: rgba(255,255,255,0.8);
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            transition: 0.2s;
+        }
+
+            .nav-item:hover, .nav-item.active {
+                color: white;
+                background-color: rgba(255,255,255,0.1);
+                border-left: 4px solid white;
+            }
+
+            .nav-item i {
+                margin-right: 10px;
+                width: 20px;
+                text-align: center;
+            }
+
+        .content-wrapper {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .top-bar {
+            background: white;
+            height: 70px;
+            box-shadow: 0 .15rem 1.75rem 0 rgba(58,59,69,.15);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2rem;
+        }
+
+        .main-content {
+            padding: 2rem;
+        }
+
+        .card-custom {
             border: none;
+            border-radius: 10px;
+            box-shadow: 0 0.15rem 1.75rem 0 rgba(58,59,69,.15);
+            transition: transform 0.2s;
         }
 
-        .nav-tabs .nav-link.active {
-            background-color: #0d6efd;
+            .card-custom:hover {
+                transform: translateY(-5px);
+            }
+
+        /* Utility */
+        .hidden {
+            display: none !important;
+        }
+
+        .bg-gradient-primary {
+            background: linear-gradient(45deg, #4e73df, #224abe);
             color: white;
         }
 
-        .nav-link {
-            color: #495057;
-            font-weight: bold;
-        }
-
-        .header-title {
-            padding: 20px;
-            text-align: center;
-            color: #0d6efd;
+        .bg-gradient-success {
+            background: linear-gradient(45deg, #1cc88a, #13855c);
+            color: white;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h2 class="header-title">نظام الإدارة المتكامل (Integrated System)</h2>
+    <div id="login-screen">
+        <div class="login-card">
+            <div class="text-center mb-4">
+                <i class="fas fa-cube fa-3x text-primary mb-3"></i>
+                <h4 class="text-gray-900">Welcome Back!</h4>
+                <p class="text-muted small">Login to access Logistics & Notes</p>
+            </div>
+            <form id="loginForm">
+                <div class="mb-3">
+                    <input type="email" class="form-control form-control-lg" id="loginEmail" placeholder="Enter Email Address..." required value="admin@sys.com">
+                </div>
+                <div class="mb-3">
+                    <input type="password" class="form-control form-control-lg" id="loginPassword" placeholder="Password" required value="123456">
+                </div>
+                <button type="submit" class="btn btn-primary btn-lg w-100 rounded-pill">Login</button>
+            </form>
+            <div id="loginError" class="alert alert-danger mt-3 hidden text-center small">Invalid Email or Password</div>
+            <hr>
+            <div class="text-center small">
+                <a href="#" class="text-muted">Forgot Password?</a>
+            </div>
+        </div>
+    </div>
 
-        <div class="alert alert-info d-flex justify-content-between align-items-center">
-            <span><strong>المستخدم الحالي:</strong> Ahmed Yilmaz (User ID: 1)</span>
-            <button class="btn btn-sm btn-outline-primary" onclick="loadData()">تحديث البيانات</button>
+    <div id="dashboard-screen" class="hidden">
+
+        <div class="sidebar">
+            <div class="sidebar-brand">
+                <i class="fas fa-cubes"></i> LOGI-NOTES
+            </div>
+            <a class="nav-item active" onclick="showSection('logistics')">
+                <i class="fas fa-truck"></i> Logistics System
+            </a>
+            <a class="nav-item" onclick="showSection('notes')">
+                <i class="fas fa-sticky-note"></i> Personal Notes
+            </a>
+            <a class="nav-item" onclick="showSection('users')">
+                <i class="fas fa-users-cog"></i> User Management
+            </a>
+            <div class="mt-auto mb-4">
+                <a class="nav-item text-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
         </div>
 
-        <ul class="nav nav-tabs nav-fill" id="myTab" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="logistics-tab" data-bs-toggle="tab" data-bs-target="#logistics" type="button">🚚 نظام الشحن (Logistics)</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="notes-tab" data-bs-toggle="tab" data-bs-target="#notes" type="button">📝 الملاحظات (Notes)</button>
-            </li>
-        </ul>
-
-        <div class="tab-content" id="myTabContent">
-
-            <div class="tab-pane fade show active" id="logistics" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card p-3">
-                            <h5>إضافة شحنة جديدة</h5>
-                            <form id="shipmentForm">
-                                <div class="mb-2">
-                                    <label>وصف الشحنة</label>
-                                    <input type="text" class="form-control" id="desc" placeholder="مثلاً: لابتوب" required>
-                                </div>
-                                <div class="mb-2">
-                                    <label>الوزن (KG)</label>
-                                    <input type="number" class="form-control" id="weight" value="1.0" step="0.1">
-                                </div>
-                                <input type="hidden" id="senderId" value="1">
-                                <input type="hidden" id="originId" value="1">
-                                <input type="hidden" id="destId" value="1">
-                                <input type="hidden" id="serviceId" value="1">
-                                <input type="hidden" id="statusId" value="5"> <button type="submit" class="btn btn-primary w-100">إرسال الشحنة</button>
-                            </form>
-                        </div>
+        <div class="content-wrapper">
+            <div class="top-bar">
+                <h5 class="m-0 text-primary fw-bold" id="pageTitle">Logistics Dashboard</h5>
+                <div class="d-flex align-items-center">
+                    <div class="text-end me-3">
+                        <span class="d-block text-gray-600 small" id="userNameDisplay">User Name</span>
+                        <span class="badge bg-success" id="userRoleDisplay">Role</span>
                     </div>
-
-                    <div class="col-md-8">
-                        <div class="card p-3">
-                            <h5>شحناتي (My Shipments)</h5>
-                            <table class="table table-striped">
-                                <thead>
-                                    <tr>
-                                        <th>#ID</th>
-                                        <th>الوصف</th>
-                                        <th>الوزن</th>
-                                        <th>الحالة</th>
-                                        <th>تاريخ الإرسال</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="shipmentsTable">
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="rounded-circle bg-light d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                        <i class="fas fa-user text-gray-400"></i>
                     </div>
                 </div>
             </div>
 
-            <div class="tab-pane fade" id="notes" role="tabpanel">
-                <div class="row">
-                    <div class="col-md-4">
-                        <div class="card p-3">
-                            <h5>تدوين ملاحظة</h5>
-                            <form id="noteForm">
-                                <div class="mb-2">
-                                    <label>العنوان</label>
-                                    <input type="text" class="form-control" id="noteTitle" placeholder="عنوان الملاحظة" required>
+            <div class="main-content">
+
+                <div id="section-logistics">
+                    <div class="row mb-4">
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <div class="card card-custom h-100 py-2 border-left-primary">
+                                <div class="card-body">
+                                    <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Shipments</div>
+                                    <div class="h5 mb-0 font-weight-bold text-gray-800" id="stat-shipments">0</div>
                                 </div>
-                                <div class="mb-2">
-                                    <label>المحتوى</label>
-                                    <textarea class="form-control" id="noteContent" rows="3" required></textarea>
-                                </div>
-                                <input type="hidden" id="noteUserId" value="1">
-                                <button type="submit" class="btn btn-success w-100">حفظ الملاحظة</button>
-                            </form>
+                            </div>
+                        </div>
+                        <div class="col-xl-3 col-md-6 mb-4">
+                            <button class="btn btn-primary w-100 h-100 shadow" data-bs-toggle="modal" data-bs-target="#shipmentModal">
+                                <i class="fas fa-plus fa-2x mb-2"></i><br>New Shipment
+                            </button>
                         </div>
                     </div>
 
-                    <div class="col-md-8">
-                        <div class="card p-3">
-                            <h5>ملاحظاتي (My Notes)</h5>
-                            <div id="notesList" class="row">
+                    <div class="card card-custom mb-4">
+                        <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+                            <h6 class="m-0 font-weight-bold text-primary">Recent Shipments</h6>
+                            <button class="btn btn-sm btn-outline-primary" onclick="getShipments()"><i class="fas fa-sync"></i> Refresh</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Description</th>
+                                            <th>Weight</th>
+                                            <th>Status</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="shipmentsTable"></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <div id="section-notes" class="hidden">
+                    <div class="d-flex justify-content-between mb-4">
+                        <h4 class="text-gray-800">My Personal Notes</h4>
+                        <button class="btn btn-success shadow-sm" data-bs-toggle="modal" data-bs-target="#noteModal">
+                            <i class="fas fa-plus fa-sm text-white-50"></i> Add Note
+                        </button>
+                    </div>
+                    <div class="row" id="notesList">
+                    </div>
+                </div>
+
+                <div id="section-users" class="hidden">
+                    <div class="card card-custom mb-4">
+                        <div class="card-header py-3 bg-white d-flex justify-content-between">
+                            <h6 class="m-0 font-weight-bold text-primary">System Users</h6>
+                            <button class="btn btn-sm btn-info text-white" data-bs-toggle="modal" data-bs-target="#userModal"><i class="fas fa-user-plus"></i> Add User</button>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr><th>ID</th><th>Name</th><th>Email</th><th>Role</th></tr>
+                                </thead>
+                                <tbody id="usersTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="shipmentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">Create New Shipment</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="shipmentForm">
+                        <div class="mb-3"><label>Description</label><input type="text" class="form-control" id="sDesc" required></div>
+                        <div class="mb-3"><label>Weight (KG)</label><input type="number" class="form-control" id="sWeight" value="1" required></div>
+                        <button type="submit" class="btn btn-primary w-100">Send</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="noteModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Write New Note</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="noteForm">
+                        <div class="mb-3"><label>Title</label><input type="text" class="form-control" id="nTitle" required></div>
+                        <div class="mb-3"><label>Content</label><textarea class="form-control" id="nContent" rows="4" required></textarea></div>
+                        <button type="submit" class="btn btn-success w-100">Save</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title">Register User</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <div class="row">
+                            <div class="col"><input type="text" class="form-control mb-2" id="uFname" placeholder="First Name" required></div>
+                            <div class="col"><input type="text" class="form-control mb-2" id="uLname" placeholder="Last Name" required></div>
+                        </div>
+                        <input type="email" class="form-control mb-2" id="uEmail" placeholder="Email" required>
+                        <input type="password" class="form-control mb-2" id="uPass" placeholder="Password" value="123456" required>
+                        <select class="form-select mb-3" id="uRole">
+                        </select>
+                        <button type="submit" class="btn btn-info text-white w-100">Register</button>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // URL الخاصة بال API - تأكد من البورت 7281
-    const API_URL = "/api";
+        const API_URL = "/api";
+        let CURRENT_USER = null;
 
-    // 1. Fetch Shipments
-    async function getShipments() {
-        try {
-            const res = await fetch(`${API_URL}/Shipments`);
+        // 1. LOGIN LOGIC (Simulation)
+        document.getElementById("loginForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const email = document.getElementById("loginEmail").value;
+            const pass = document.getElementById("loginPassword").value;
+            const errorBox = document.getElementById("loginError");
+
+            try {
+                // Fetch all users to find a match (Not secure for production, but perfect for DB project demo)
+                const res = await fetch(`${API_URL}/Users`);
+                const users = await res.json();
+
+                const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.passwordHash === pass);
+
+                if (user) {
+                    CURRENT_USER = user;
+                    // Switch Screens
+                    document.getElementById("login-screen").style.display = "none"; // Hide Login
+                    document.getElementById("dashboard-screen").style.display = "flex"; // Show Dashboard
+                    document.getElementById("dashboard-screen").classList.remove("hidden");
+
+                    // Setup UI
+                    document.getElementById("userNameDisplay").innerText = `${user.firstName} ${user.lastName}`;
+                    document.getElementById("userRoleDisplay").innerText = user.role ? user.role.roleName : "User";
+
+                    // Load Initial Data
+                    loadAllData();
+                } else {
+                    errorBox.classList.remove("hidden");
+                    errorBox.innerText = "Wrong Email or Password!";
+                }
+            } catch (err) {
+                console.error(err);
+                errorBox.classList.remove("hidden");
+                errorBox.innerText = "Server Connection Error!";
+            }
+        });
+
+        function logout() {
+            location.reload(); // Simple reload to clear state
+        }
+
+        // 2. NAVIGATION LOGIC
+        function showSection(sectionId) {
+            // Hide all sections
+            document.getElementById("section-logistics").classList.add("hidden");
+            document.getElementById("section-notes").classList.add("hidden");
+            document.getElementById("section-users").classList.add("hidden");
+
+            // Remove active class from sidebar
+            document.querySelectorAll(".nav-item").forEach(el => el.classList.remove("active"));
+
+            // Show selected
+            document.getElementById(`section-${sectionId}`).classList.remove("hidden");
+
+            // Update Title
+            const titles = {
+                'logistics': 'Logistics Management System',
+                'notes': 'My Personal Notes',
+                'users': 'System User Administration'
+            };
+            document.getElementById("pageTitle").innerText = titles[sectionId];
+        }
+
+        // 3. DATA FETCHING LOGIC
+        function loadAllData() {
+            getShipments();
+            getNotes();
+            getUsers();
+            getRoles();
+        }
+
+        async function getShipments() {
+            try {
+                const res = await fetch(`${API_URL}/Shipments`);
+                const data = await res.json();
+                const tbody = document.getElementById("shipmentsTable");
+                document.getElementById("stat-shipments").innerText = data.length;
+                tbody.innerHTML = "";
+                data.forEach(s => {
+                    tbody.innerHTML += `
+                            <tr>
+                                <td>#${s.shipmentId}</td>
+                                <td>${s.description}</td>
+                                <td>${s.weight} KG</td>
+                                <td><span class="badge bg-warning text-dark">Pending</span></td>
+                                <td>${new Date(s.sendingDate).toLocaleDateString()}</td>
+                            </tr>`;
+                });
+            } catch (e) { console.log(e); }
+        }
+
+        async function getNotes() {
+            try {
+                const res = await fetch(`${API_URL}/Notes`);
+                const data = await res.json();
+                const list = document.getElementById("notesList");
+                list.innerHTML = "";
+                data.forEach(n => {
+                    list.innerHTML += `
+                            <div class="col-md-4 mb-3">
+                                <div class="card card-custom h-100 border-left-success">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-success">${n.title}</h5>
+                                        <p class="card-text text-muted">${n.content}</p>
+                                        <small class="text-xs text-gray-400">${new Date().toLocaleDateString()}</small>
+                                    </div>
+                                </div>
+                            </div>`;
+                });
+            } catch (e) { console.log(e); }
+        }
+
+        async function getUsers() {
+            const res = await fetch(`${API_URL}/Users`);
             const data = await res.json();
-            const tbody = document.getElementById("shipmentsTable");
+            const tbody = document.getElementById("usersTable");
             tbody.innerHTML = "";
-            data.forEach(ship => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td>${ship.shipmentId}</td>
-                        <td>${ship.description}</td>
-                        <td>${ship.weight} KG</td>
-                        <td><span class="badge bg-warning text-dark">Pending (ID:${ship.currentStatusId})</span></td>
-                        <td>${new Date(ship.sendingDate).toLocaleDateString()}</td>
-                    </tr>
-                `;
+            data.forEach(u => {
+                tbody.innerHTML += `<tr><td>${u.userId}</td><td>${u.firstName} ${u.lastName}</td><td>${u.email}</td><td>${u.role?.roleName || '-'}</td></tr>`;
             });
-        } catch (err) { console.error("Error fetching shipments:", err); }
-    }
+        }
 
-    // 2. Add Shipment
-    document.getElementById("shipmentForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const payload = {
-            senderId: 1, // Ahmed
-            originBranchId: 1,
-            destinationBranchId: 1,
-            serviceTypeId: 1,
-            currentStatusId: 5, // Pending
-            weight: parseFloat(document.getElementById("weight").value),
-            description: document.getElementById("desc").value,
-            estimatedDeliveryDate: new Date().toISOString()
-        };
-
-        await fetch(`${API_URL}/Shipments`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
-        });
-        alert("تم إضافة الشحنة بنجاح!");
-        getShipments(); // Refresh list
-    });
-
-    // 3. Fetch Notes
-    async function getNotes() {
-        try {
-            const res = await fetch(`${API_URL}/Notes`);
+        async function getRoles() {
+            const res = await fetch(`${API_URL}/Roles`);
             const data = await res.json();
-            const container = document.getElementById("notesList");
-            container.innerHTML = "";
-            data.forEach(note => {
-                container.innerHTML += `
-                    <div class="col-md-6 mb-2">
-                        <div class="card p-2 bg-light">
-                            <strong>${note.title}</strong>
-                            <p class="small text-muted mb-0">${note.content}</p>
-                        </div>
-                    </div>
-                `;
-            });
-        } catch (err) { console.error("Error fetching notes:", err); }
-    }
+            const sel = document.getElementById("uRole");
+            sel.innerHTML = "";
+            data.forEach(r => sel.innerHTML += `<option value="${r.roleId}">${r.roleName}</option>`);
+        }
 
-    // 4. Add Note
-    document.getElementById("noteForm").addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const payload = {
-            userId: 1, // Ahmed
-            title: document.getElementById("noteTitle").value,
-            content: document.getElementById("noteContent").value
-        };
-
-        await fetch(`${API_URL}/Notes`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload)
+        // 4. ADD DATA LOGIC
+        document.getElementById("shipmentForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                senderId: CURRENT_USER.userId, originBranchId: 1, destinationBranchId: 1, serviceTypeId: 1, currentStatusId: 5,
+                description: document.getElementById("sDesc").value,
+                weight: parseFloat(document.getElementById("sWeight").value),
+                estimatedDeliveryDate: new Date().toISOString()
+            };
+            await fetch(`${API_URL}/Shipments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            bootstrap.Modal.getInstance(document.getElementById('shipmentModal')).hide();
+            getShipments();
         });
-        alert("تم حفظ الملاحظة!");
-        getNotes(); // Refresh
-    });
 
-    // Initial Load
-    function loadData() {
-        getShipments();
-        getNotes();
-    }
-    loadData();
+        document.getElementById("noteForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                userId: CURRENT_USER.userId,
+                title: document.getElementById("nTitle").value,
+                content: document.getElementById("nContent").value
+            };
+            await fetch(`${API_URL}/Notes`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
+            getNotes();
+        });
+
+        document.getElementById("userForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const payload = {
+                firstName: document.getElementById("uFname").value,
+                lastName: document.getElementById("uLname").value,
+                email: document.getElementById("uEmail").value,
+                passwordHash: document.getElementById("uPass").value,
+                roleId: parseInt(document.getElementById("uRole").value),
+                phone: "0000000000"
+            };
+            const res = await fetch(`${API_URL}/Users`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+            if (res.ok) {
+                bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
+                getUsers();
+                alert("User Registered!");
+            } else { alert("Error! Check duplicate email."); }
+        });
+
     </script>
-
 </body>
 </html>
