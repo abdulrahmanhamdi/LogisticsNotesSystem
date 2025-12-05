@@ -112,6 +112,7 @@ LogisticsNotesSystem/
 │   ├── Controllers/           # API Controllers
 │   ├── Models/                # Entity Classes
 │   ├── wwwroot/               # Frontend Files
+│   │   ├── Images             # Images 
 │   │   ├── index.html         # Dashboard Interface
 │   │   ├── style.css          # Stylesheet
 │   │   └── script.js          # JavaScript Logic
