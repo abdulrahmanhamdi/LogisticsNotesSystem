@@ -10,7 +10,7 @@ namespace LogisticsNotes.API.Models;
 public partial class User
 {
     [Key]
-    [Column("UserID")]
+    [DatabaseGenerated(DatabaseGeneratedOption.None)]
     public int UserId { get; set; }
 
     [Column("RoleID")]

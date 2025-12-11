@@ -20,7 +20,7 @@ public partial class Vehicle
     public string? Model { get; set; }
 
     [Column(TypeName = "decimal(10, 2)")]
-    public decimal? Capacity { get; set; }
+    public double? Capacity { get; set; }
 
     [StringLength(20)]
     public string? Status { get; set; }

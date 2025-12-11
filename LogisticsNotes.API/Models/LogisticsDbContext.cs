@@ -65,7 +65,7 @@ public partial class LogisticsDbContext : DbContext
         modelBuilder.Entity<DeliveryHistory>(entity =>
         {
             entity.HasKey(e => e.HistoryId).HasName("PK__Delivery__4D7B4ADD4A2B98BD");
-            entity.Property(e => e.Timestamp).HasDefaultValueSql("(getdate())");
+            entity.Property(e => e.ChangedAt).HasDefaultValueSql("(getdate())");
             entity.HasOne(d => d.Shipment).WithMany(p => p.DeliveryHistories).HasConstraintName("FK_History_Shipments");
             entity.HasOne(d => d.Status).WithMany(p => p.DeliveryHistories)
                 .OnDelete(DeleteBehavior.ClientSetNull)

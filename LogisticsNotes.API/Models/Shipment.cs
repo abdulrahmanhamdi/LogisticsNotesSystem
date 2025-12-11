@@ -27,20 +27,24 @@ public partial class Shipment
     [Column("CurrentStatusID")]
     public int CurrentStatusId { get; set; }
 
-    [Column(TypeName = "decimal(10, 2)")]
-    public decimal Weight { get; set; }
+    public double Weight { get; set; }
 
     [StringLength(255)]
     public string? Description { get; set; }
 
-    [Column(TypeName = "datetime")]
+    [Column(TypeName = "datetime2")] 
     public DateTime? SendingDate { get; set; }
 
-    [Column(TypeName = "datetime")]
+    [Column(TypeName = "datetime2")]
     public DateTime? EstimatedDeliveryDate { get; set; }
 
-    [Column(TypeName = "datetime")]
+    [Column(TypeName = "datetime2")]
     public DateTime? DeliveredAt { get; set; }
+
+    [Column("AssignedCourierID")]
+    public int? AssignedCourierId { get; set; }
+
+
 
     [ForeignKey("CurrentStatusId")]
     [InverseProperty("Shipments")]
@@ -67,9 +71,8 @@ public partial class Shipment
     [ForeignKey("ServiceTypeId")]
     [InverseProperty("Shipments")]
     public virtual ServiceType? ServiceType { get; set; }
-    public int? CourierId { get; set; } 
 
-    [ForeignKey("CourierId")]
+    [ForeignKey("AssignedCourierId")]
     [InverseProperty("Shipments")]
-    public virtual Courier? Courier { get; set; } // علاقة الربط
+    public virtual Courier? Courier { get; set; }
 }

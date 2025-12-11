@@ -15,11 +15,10 @@ public partial class ServiceType
     [StringLength(50)]
     public string TypeName { get; set; } = null!;
 
-    [Column(TypeName = "decimal(10, 2)")]
-    public decimal BasePrice { get; set; }
 
-    [Column(TypeName = "decimal(5, 2)")]
-    public decimal? SpeedFactor { get; set; }
+    public double BasePrice { get; set; }
+
+    public double? SpeedFactor { get; set; }
 
     [InverseProperty("ServiceType")]
     public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();

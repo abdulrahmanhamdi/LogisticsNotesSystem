@@ -19,7 +19,7 @@ public partial class Payment
     public int MethodId { get; set; }
 
     [Column(TypeName = "decimal(10, 2)")]
-    public decimal Amount { get; set; }
+    public double Amount { get; set; }
 
     [Column(TypeName = "datetime")]
     public DateTime? PaymentDate { get; set; }

@@ -46,12 +46,19 @@ namespace LogisticsNotes.API.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutShipment(int id, Shipment shipment)
         {
-            if (id != shipment.ShipmentId)
-            {
-                return BadRequest();
-            }
+            if (id != shipment.ShipmentId) return BadRequest();
 
             _context.Entry(shipment).State = EntityState.Modified;
+
+            // --- Logic to auto-save history on update ---
+            var history = new DeliveryHistory
+            {
+                ShipmentId = shipment.ShipmentId,
+                StatusId = shipment.CurrentStatusId,
+                ChangedAt = DateTime.Now,
+                Notes = "Status updated via System"
+            };
+            _context.DeliveryHistories.Add(history);
 
             try
             {
@@ -59,14 +66,8 @@ namespace LogisticsNotes.API.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!ShipmentExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                if (!ShipmentExists(id)) return NotFound();
+                else throw;
             }
 
             return NoContent();
@@ -97,6 +98,27 @@ namespace LogisticsNotes.API.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        // --- NEW METHOD: Get History for a specific Shipment ---
+        // GET: api/Shipments/5/History
+        [HttpGet("{id}/History")]
+        public async Task<ActionResult<IEnumerable<object>>> GetShipmentHistory(int id)
+        {
+            var history = await _context.DeliveryHistories
+                .Where(h => h.ShipmentId == id)
+                .Include(h => h.Status) // Include Status to get the name
+                .OrderByDescending(h => h.ChangedAt) // Newest first
+                .Select(h => new
+                {
+                    h.HistoryId,
+                    StatusName = h.Status.StatusName,
+                    h.ChangedAt,
+                    h.Notes
+                })
+                .ToListAsync();
+
+            return history;
         }
 
         private bool ShipmentExists(int id)

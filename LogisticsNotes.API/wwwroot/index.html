@@ -34,16 +34,16 @@
             <div class="sidebar-brand">
                 <i class="fas fa-cubes"></i> LOGI-NOTES
             </div>
-            <a class="nav-item active" onclick="showSection('logistics')">
+            <a id="nav-logistics" class="nav-item active" onclick="showSection('logistics')">
                 <i class="fas fa-truck"></i> Shipping System
             </a>
-            <a class="nav-item" onclick="showSection('notes')">
+            <a id="nav-notes" class="nav-item" onclick="showSection('notes')">
                 <i class="fas fa-sticky-note"></i> Notes
             </a>
-            <a class="nav-item" onclick="showSection('users')">
+            <a id="nav-users" class="nav-item" onclick="showSection('users')">
                 <i class="fas fa-users-cog"></i> User Management
             </a>
-            <a class="nav-item" onclick="showSection('branches')">
+            <a id="nav-branches" class="nav-item" onclick="showSection('branches')">
                 <i class="fas fa-building"></i> Branches Management
             </a>
             <div class="mt-auto mb-4">
@@ -69,9 +69,8 @@
 
             <div class="main-content">
                 <div id="section-logistics">
-
                     <div class="row mb-4">
-                        <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="col-xl-4 col-md-6 mb-4" onclick="showSection('logistics')" style="cursor: pointer;">
                             <div class="card card-custom border-left-primary h-100 py-2">
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
@@ -87,7 +86,7 @@
                             </div>
                         </div>
 
-                        <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="col-xl-4 col-md-6 mb-4" onclick="showSection('logistics')" style="cursor: pointer;">
                             <div class="card card-custom border-left-warning h-100 py-2">
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
@@ -103,7 +102,7 @@
                             </div>
                         </div>
 
-                        <div class="col-xl-4 col-md-6 mb-4">
+                        <div class="col-xl-4 col-md-6 mb-4" onclick="showSection('notes')" style="cursor: pointer;">
                             <div class="card card-custom border-left-success h-100 py-2">
                                 <div class="card-body">
                                     <div class="row no-gutters align-items-center">
@@ -119,26 +118,27 @@
                             </div>
                         </div>
                     </div>
+
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Shipments Management</h4>
                         <div class="d-flex gap-2">
                             <input type="text" id="searchShipmentInput" class="form-control" placeholder="Search Shipment (ID or Description)...">
-                            <button class="btn btn-primary shadow" onclick="openShipmentModal()">
+                            <button class="btn btn-primary shadow" id="btn-new-shipment" onclick="openShipmentModal()">
                                 <i class="fas fa-plus"></i> New Shipment
                             </button>
                         </div>
                     </div>
                     <div class="card card-custom">
                         <div class="card-body">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-sm align-middle mb-0">
                                 <thead class="table-light">
                                     <tr>
                                         <th>ID</th>
                                         <th>Description</th>
                                         <th>Weight</th>
                                         <th>Status</th>
-                                        <th>Ship Date</_shipment</th>
-                                        <th>Actions</th>
+                                        <th>Ship Date</th>
+                                        <th id="actionsHeader">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="shipmentsTable"></tbody>
@@ -166,7 +166,7 @@
                     </div>
                     <div class="card card-custom">
                         <div class="card-body">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-sm align-middle mb-0">
                                 <thead>
                                     <tr>
                                         <th>ID</th>
@@ -191,7 +191,7 @@
                     </div>
                     <div class="card card-custom">
                         <div class="card-body">
-                            <table class="table table-hover">
+                            <table class="table table-hover table-sm align-middle mb-0">
                                 <thead class="table-dark">
                                     <tr><th>ID</th><th>Branch Name</th><th>City</th><th>Address</th><th>Phone</th><th>Delete</th></tr>
                                 </thead>
@@ -238,7 +238,7 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label>Weight (KG)</label>
-                                <input type="number" class="form-control" id="sWeight" value="1" step="0.1" required>
+                                <input type="number" class="form-control" id="sWeight" value="1" step="0.1" min="0.1" required>
                             </div>
                         </div>
 
@@ -289,7 +289,11 @@
                 </div>
                 <div class="modal-body">
                     <form id="userForm">
-                        <input type="hidden" id="uId">
+                        <div class="mb-2">
+                            <label class="form-label fw-bold">User ID (Manual Input)</label>
+                            <input type="number" class="form-control" id="uId" placeholder="Enter ID manually" required min="1">
+                        </div>
+
                         <div class="row">
                             <div class="col">
                                 <input type="text" class="form-control mb-2" id="uFname" placeholder="First Name" required>
@@ -298,9 +302,12 @@
                                 <input type="text" class="form-control mb-2" id="uLname" placeholder="Last Name" required>
                             </div>
                         </div>
+
                         <input type="email" class="form-control mb-2" id="uEmail" placeholder="Email" required>
+                        <input type="text" class="form-control mb-2" id="uPhone" placeholder="Phone Number">
                         <input type="password" class="form-control mb-2" id="uPass" placeholder="Password (leave empty to keep)">
                         <select class="form-select mb-3" id="uRole"></select>
+
                         <button type="submit" class="btn btn-info text-white w-100">Save</button>
                     </form>
                 </div>
@@ -328,6 +335,19 @@
                         </div>
                         <button type="submit" class="btn btn-warning w-100 text-dark">Update Status</button>
                     </form>
+
+                    <hr>
+                    <h6 class="fw-bold">Tracking History:</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
