@@ -75,11 +75,23 @@ namespace LogisticsNotes.API.Controllers
 
         // POST: api/Shipments
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
+        // POST: api/Shipments
         [HttpPost]
         public async Task<ActionResult<Shipment>> PostShipment(Shipment shipment)
         {
             _context.Shipments.Add(shipment);
             await _context.SaveChangesAsync();
+
+            var history = new DeliveryHistory
+            {
+                ShipmentId = shipment.ShipmentId,     
+                StatusId = shipment.CurrentStatusId,   
+                ChangedAt = DateTime.Now,
+                Notes = "Shipment created successfully" 
+            };
+
+            _context.DeliveryHistories.Add(history);
+            await _context.SaveChangesAsync(); 
 
             return CreatedAtAction("GetShipment", new { id = shipment.ShipmentId }, shipment);
         }
