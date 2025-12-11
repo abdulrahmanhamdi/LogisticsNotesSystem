@@ -1,0 +1,228 @@
+-- =============================================
+-- 1. Setup Database Environment
+-- =============================================
+USE master;
+GO
+
+-- Check if database exists, if so, drop it (For fresh start during development)
+-- CAUTION: This deletes existing data! Remove this block if you want to keep data.
+IF EXISTS (SELECT * FROM sys.databases WHERE name = 'LogisticsNotesDB')
+BEGIN
+    ALTER DATABASE LogisticsNotesDB SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE LogisticsNotesDB;
+END
+GO
+
+-- Create the Database
+CREATE DATABASE LogisticsNotesDB;
+GO
+
+-- Select the Database
+USE LogisticsNotesDB;
+GO
+
+-- =============================================
+-- 2. Create Shared Module Tables
+-- =============================================
+
+-- Roles Table
+CREATE TABLE Roles (
+    RoleID INT PRIMARY KEY IDENTITY(1,1),
+    RoleName NVARCHAR(50) NOT NULL, -- Admin, Customer, Courier
+    Description NVARCHAR(200)
+);
+
+-- Users Table
+CREATE TABLE Users (
+    UserID INT PRIMARY KEY IDENTITY(1,1),
+    RoleID INT NOT NULL,
+    FirstName NVARCHAR(50) NOT NULL,
+    LastName NVARCHAR(50) NOT NULL,
+    Email NVARCHAR(100) UNIQUE NOT NULL,
+    PasswordHash NVARCHAR(255) NOT NULL,
+    Phone NVARCHAR(20),
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Users_Roles FOREIGN KEY (RoleID) REFERENCES Roles(RoleID)
+);
+
+-- =============================================
+-- 3. Create Letter Delivery System Tables
+-- =============================================
+
+-- Branches
+CREATE TABLE Branches (
+    BranchID INT PRIMARY KEY IDENTITY(1,1),
+    BranchName NVARCHAR(100) NOT NULL,
+    City NVARCHAR(50) NOT NULL,
+    Address NVARCHAR(255) NOT NULL,
+    Phone NVARCHAR(20)
+);
+
+-- Vehicles
+CREATE TABLE Vehicles (
+    VehicleID INT PRIMARY KEY IDENTITY(1,1),
+    LicensePlate NVARCHAR(20) UNIQUE NOT NULL,
+    Model NVARCHAR(50),
+    Capacity DECIMAL(10, 2),
+    Status NVARCHAR(20) DEFAULT 'Available'
+);
+
+-- Couriers (Updated with IsActive & CourierID)
+CREATE TABLE Couriers (
+    CourierID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT UNIQUE NOT NULL,
+    CurrentBranchID INT,
+    LicenseNumber NVARCHAR(50) NOT NULL,
+    VehicleType NVARCHAR(50),
+    ShiftStart TIME,
+    ShiftEnd TIME,
+    IsActive BIT DEFAULT 1,
+    CONSTRAINT FK_Couriers_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Couriers_Branches FOREIGN KEY (CurrentBranchID) REFERENCES Branches(BranchID)
+);
+
+-- Service Types
+CREATE TABLE ServiceTypes (
+    ServiceTypeID INT PRIMARY KEY IDENTITY(1,1),
+    TypeName NVARCHAR(50) NOT NULL,
+    BasePrice DECIMAL(10, 2) NOT NULL,
+    SpeedFactor DECIMAL(5, 2)
+);
+
+-- Shipment Statuses
+CREATE TABLE ShipmentStatuses (
+    StatusID INT PRIMARY KEY IDENTITY(1,1),
+    StatusName NVARCHAR(50) NOT NULL,
+    Description NVARCHAR(200)
+);
+
+-- Shipments (Updated with EstimatedDelivery & DeliveredAt)
+CREATE TABLE Shipments (
+    ShipmentID INT PRIMARY KEY IDENTITY(1,1),
+    SenderID INT NOT NULL,
+    OriginBranchID INT NOT NULL,
+    DestinationBranchID INT NOT NULL,
+    ServiceTypeID INT NOT NULL,
+    CurrentStatusID INT NOT NULL,
+    Weight DECIMAL(10, 2) NOT NULL,
+    Description NVARCHAR(255),
+    SendingDate DATETIME DEFAULT GETDATE(),
+    EstimatedDeliveryDate DATETIME,
+    DeliveredAt DATETIME NULL,
+    CONSTRAINT FK_Shipments_Users FOREIGN KEY (SenderID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Shipments_Origin FOREIGN KEY (OriginBranchID) REFERENCES Branches(BranchID), -- NO ACTION to avoid cycles
+    CONSTRAINT FK_Shipments_Destination FOREIGN KEY (DestinationBranchID) REFERENCES Branches(BranchID), -- NO ACTION
+    CONSTRAINT FK_Shipments_ServiceTypes FOREIGN KEY (ServiceTypeID) REFERENCES ServiceTypes(ServiceTypeID),
+    CONSTRAINT FK_Shipments_Statuses FOREIGN KEY (CurrentStatusID) REFERENCES ShipmentStatuses(StatusID)
+);
+
+-- Delivery History
+CREATE TABLE DeliveryHistory (
+    HistoryID INT PRIMARY KEY IDENTITY(1,1),
+    ShipmentID INT NOT NULL,
+    StatusID INT NOT NULL,
+    Location NVARCHAR(100),
+    ChangedByUserID INT,
+    Timestamp DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_History_Shipments FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID) ON DELETE CASCADE,
+    CONSTRAINT FK_History_Statuses FOREIGN KEY (StatusID) REFERENCES ShipmentStatuses(StatusID)
+);
+
+-- Payment Methods
+CREATE TABLE PaymentMethods (
+    MethodID INT PRIMARY KEY IDENTITY(1,1),
+    MethodName NVARCHAR(50) NOT NULL
+);
+
+-- Payments (Updated)
+CREATE TABLE Payments (
+    PaymentID INT PRIMARY KEY IDENTITY(1,1),
+    ShipmentID INT NOT NULL,
+    MethodID INT NOT NULL,
+    Amount DECIMAL(10, 2) NOT NULL,
+    PaymentDate DATETIME DEFAULT GETDATE(),
+    IsSuccessful BIT DEFAULT 1,
+    CONSTRAINT FK_Payments_Shipments FOREIGN KEY (ShipmentID) REFERENCES Shipments(ShipmentID),
+    CONSTRAINT FK_Payments_Methods FOREIGN KEY (MethodID) REFERENCES PaymentMethods(MethodID)
+);
+
+-- =============================================
+-- 4. Create Personal Note System Tables
+-- =============================================
+
+-- Folders (Updated with IsArchived)
+CREATE TABLE Folders (
+    FolderID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT NOT NULL,
+    FolderName NVARCHAR(100) NOT NULL,
+    ColorCode NVARCHAR(10),
+    IsArchived BIT DEFAULT 0,
+    CONSTRAINT FK_Folders_Users FOREIGN KEY (UserID) REFERENCES Users(UserID)
+);
+
+-- Categories
+CREATE TABLE Categories (
+    CategoryID INT PRIMARY KEY IDENTITY(1,1),
+    CategoryName NVARCHAR(50) NOT NULL
+);
+
+-- Notes
+CREATE TABLE Notes (
+    NoteID INT PRIMARY KEY IDENTITY(1,1),
+    UserID INT NOT NULL,
+    FolderID INT,
+    CategoryID INT,
+    Title NVARCHAR(200) NOT NULL,
+    Content NVARCHAR(MAX),
+    CreatedAt DATETIME DEFAULT GETDATE(),
+    ModifiedAt DATETIME,
+    CONSTRAINT FK_Notes_Users FOREIGN KEY (UserID) REFERENCES Users(UserID),
+    CONSTRAINT FK_Notes_Folders FOREIGN KEY (FolderID) REFERENCES Folders(FolderID),
+    CONSTRAINT FK_Notes_Categories FOREIGN KEY (CategoryID) REFERENCES Categories(CategoryID)
+);
+
+-- Attachments
+CREATE TABLE Attachments (
+    AttachmentID INT PRIMARY KEY IDENTITY(1,1),
+    NoteID INT NOT NULL,
+    FileName NVARCHAR(255) NOT NULL,
+    FilePath NVARCHAR(MAX) NOT NULL,
+    UploadedAt DATETIME DEFAULT GETDATE(),
+    CONSTRAINT FK_Attachments_Notes FOREIGN KEY (NoteID) REFERENCES Notes(NoteID) ON DELETE CASCADE
+);
+
+-- Tags
+CREATE TABLE Tags (
+    TagID INT PRIMARY KEY IDENTITY(1,1),
+    TagLabel NVARCHAR(50) UNIQUE NOT NULL
+);
+
+-- NoteTags (Bridge Table)
+CREATE TABLE NoteTags (
+    NoteID INT NOT NULL,
+    TagID INT NOT NULL,
+    PRIMARY KEY (NoteID, TagID),
+    CONSTRAINT FK_NoteTags_Notes FOREIGN KEY (NoteID) REFERENCES Notes(NoteID) ON DELETE CASCADE,
+    CONSTRAINT FK_NoteTags_Tags FOREIGN KEY (TagID) REFERENCES Tags(TagID) ON DELETE CASCADE
+);
+
+-- Shared Notes
+CREATE TABLE SharedNotes (
+    ShareID INT PRIMARY KEY IDENTITY(1,1),
+    NoteID INT NOT NULL,
+    SharedWithUserID INT NOT NULL,
+    PermissionLevel NVARCHAR(20) DEFAULT 'View',
+    CONSTRAINT FK_SharedNotes_Notes FOREIGN KEY (NoteID) REFERENCES Notes(NoteID), -- Careful with cascading here
+    CONSTRAINT FK_SharedNotes_Users FOREIGN KEY (SharedWithUserID) REFERENCES Users(UserID)
+);
+
+-- =============================================
+-- 5. Seed Initial Data (Optional - For Testing)
+-- =============================================
+INSERT INTO Roles (RoleName) VALUES ('Admin'), ('Customer'), ('Courier');
+INSERT INTO ServiceTypes (TypeName, BasePrice, SpeedFactor) VALUES ('Standard', 10.00, 1.0), ('Express', 25.00, 0.5);
+INSERT INTO ShipmentStatuses (StatusName) VALUES ('Pending'), ('Picked Up'), ('In Transit'), ('Delivered');
+INSERT INTO PaymentMethods (MethodName) VALUES ('Cash'), ('Credit Card');
+INSERT INTO Categories (CategoryName) VALUES ('Work'), ('Personal'), ('Urgent');
+
+PRINT 'Database LogisticsNotesDB created successfully with 18 tables!';
