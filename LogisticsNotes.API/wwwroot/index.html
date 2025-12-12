@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    
     <div id="login-screen">
         <div class="login-card">
             <div class="text-center mb-4">
@@ -30,6 +31,7 @@
     </div>
 
     <div id="dashboard-screen" class="hidden">
+        
         <div class="sidebar">
             <div class="sidebar-brand">
                 <i class="fas fa-cubes"></i> LOGI-NOTES
@@ -118,7 +120,7 @@
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Shipments Management</h4>
                         <div class="d-flex gap-2">
-                            <input type="text" id="searchShipmentInput" class="form-control" placeholder="Search Shipment (ID or Description)...">
+                            <input type="text" id="searchShipmentInput" class="form-control" placeholder="Search (ID or Desc)...">
                             <button class="btn btn-primary shadow" id="btn-new-shipment" onclick="openShipmentModal()">
                                 <i class="fas fa-plus"></i> New Shipment
                             </button>
@@ -142,7 +144,9 @@
                             </table>
                         </div>
                     </div>
-                </div> <div id="section-notes" class="hidden">
+                </div> 
+
+                <div id="section-notes" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">My Personal Notes</h4>
                         <button class="btn btn-success shadow" onclick="openNoteModal()">
@@ -150,7 +154,9 @@
                         </button>
                     </div>
                     <div class="row" id="notesList"></div>
-                </div> <div id="section-users" class="hidden">
+                </div> 
+
+                <div id="section-users" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Users List</h4>
                         <button class="btn btn-info text-white shadow" onclick="openUserModal()">
@@ -173,7 +179,9 @@
                             </table>
                         </div>
                     </div>
-                </div> <div id="section-branches" class="hidden">
+                </div> 
+
+                <div id="section-branches" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Branches Management</h4>
                         <button class="btn btn-warning text-dark shadow" onclick="openBranchModal()">
@@ -190,7 +198,9 @@
                             </table>
                         </div>
                     </div>
-                </div> <div id="section-vehicles" class="hidden">
+                </div> 
+
+                <div id="section-vehicles" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Fleet Management</h4>
                         <button class="btn btn-dark shadow" onclick="openVehicleModal()">
@@ -215,11 +225,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
 
-    <div class="modal fade" id="shipmentModal" tabindex="-1">
+            </div> </div> </div> <div class="modal fade" id="shipmentModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header bg-primary text-white">
@@ -274,12 +281,11 @@
                 <div class="modal-body">
                     <form id="noteForm">
                         <input type="hidden" id="nId">
-
                         <div class="mb-3">
                             <label>Title</label>
                             <input type="text" class="form-control" id="nTitle" required>
                         </div>
-
+                        
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label>Category</label>
@@ -306,7 +312,6 @@
                             <label>Content</label>
                             <textarea class="form-control" id="nContent" rows="4" required></textarea>
                         </div>
-
                         <button type="submit" class="btn btn-success w-100">Save Note</button>
                     </form>
                 </div>
@@ -373,31 +378,6 @@
         </div>
     </div>
 
-    <div class="modal fade" id="paymentModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title">Shipment Payments</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="paymentForm">
-                        <input type="hidden" id="payShipmentId">
-                        <div class="mb-3"><label>Amount ($)</label><input type="number" class="form-control" id="payAmount" required min="1" step="0.5"></div>
-                        <div class="mb-3"><label>Method</label><select class="form-select" id="payMethod" required></select></div>
-                        <button type="submit" class="btn btn-success w-100">Confirm Payment</button>
-                    </form>
-                    <hr>
-                    <h6 class="fw-bold text-success">Payment History:</h6>
-                    <table class="table table-sm table-bordered">
-                        <thead><tr><th>Date</th><th>Method</th><th>Amount</th></tr></thead>
-                        <tbody id="paymentHistoryBody"></tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <div class="modal fade" id="branchModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -453,6 +433,7 @@
             </div>
         </div>
     </div>
+
     <div class="modal fade" id="shareModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -490,7 +471,8 @@
                 </div>
                 <div class="modal-body">
                     <form id="courierForm">
-                        <input type="hidden" id="cUserId"> <input type="hidden" id="cId">     <div class="mb-3">
+                        <input type="hidden" id="cUserId"> <input type="hidden" id="cId">
+                        <div class="mb-3">
                             <label>License Number</label>
                             <input type="text" class="form-control" id="cLicense" required placeholder="e.g. LIC-98765">
                         </div>

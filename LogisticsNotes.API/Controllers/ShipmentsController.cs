@@ -9,6 +9,13 @@ using LogisticsNotes.API.Models;
 
 namespace LogisticsNotes.API.Controllers
 {
+    public class StatusUpdateModel
+    {
+        public int ShipmentId { get; set; }
+        public int NewStatusId { get; set; }
+        public string? Notes { get; set; }
+    }
+
     [Route("api/[controller]")]
     [ApiController]
     public class ShipmentsController : ControllerBase
@@ -20,23 +27,30 @@ namespace LogisticsNotes.API.Controllers
             _context = context;
         }
 
-        // GET: api/Shipments
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Shipment>>> GetShipments()
         {
             return await _context.Shipments
-                .Include(s => s.OriginBranch)      
+                .Include(s => s.OriginBranch)
                 .Include(s => s.DestinationBranch)
-                .Include(s => s.CurrentStatus)      
-                .Include(s => s.ServiceType)        
+                .Include(s => s.ServiceType)
+                .Include(s => s.CurrentStatus)
+                .Include(s => s.AssignedCourier)
+                    .ThenInclude(c => c.User)
+                .Include(s => s.AssignedCourier)
+                    .ThenInclude(c => c.Vehicle)
                 .ToListAsync();
         }
 
-        // GET: api/Shipments/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Shipment>> GetShipment(int id)
         {
-            var shipment = await _context.Shipments.FindAsync(id);
+            var shipment = await _context.Shipments
+                .Include(s => s.OriginBranch)
+                .Include(s => s.DestinationBranch)
+                .Include(s => s.ServiceType)
+                .Include(s => s.CurrentStatus)
+                .FirstOrDefaultAsync(s => s.ShipmentId == id);
 
             if (shipment == null)
             {
@@ -46,112 +60,88 @@ namespace LogisticsNotes.API.Controllers
             return shipment;
         }
 
-        // PUT: api/Shipments/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        // PUT: api/Shipments/5
+        [HttpPost]
+        public async Task<ActionResult<Shipment>> PostShipment(Shipment shipment)
+        {
+            shipment.SendingDate = DateTime.Now;
+
+            var service = await _context.ServiceTypes.FindAsync(shipment.ServiceTypeId);
+            if (service != null)
+            {
+                shipment.ShippingCost = service.BasePrice + (service.PricePerKg * shipment.Weight);
+            }
+
+            _context.Shipments.Add(shipment);
+            await _context.SaveChangesAsync();
+
+            var initialHistory = new DeliveryHistory
+            {
+                ShipmentId = shipment.ShipmentId,
+                StatusId = shipment.CurrentStatusId,
+                ChangedAt = DateTime.Now,
+                Notes = "Shipment created automatically by system."
+            };
+
+            _context.DeliveryHistories.Add(initialHistory);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetShipment", new { id = shipment.ShipmentId }, shipment);
+        }
+
+        [HttpPost("UpdateStatus")]
+        public async Task<IActionResult> UpdateStatus([FromBody] StatusUpdateModel model)
+        {
+            var shipment = await _context.Shipments.FindAsync(model.ShipmentId);
+            if (shipment == null) return NotFound("Shipment not found.");
+
+            shipment.CurrentStatusId = model.NewStatusId;
+
+            if (model.NewStatusId == 5)
+            {
+                shipment.DeliveredAt = DateTime.Now;
+            }
+
+            var history = new DeliveryHistory
+            {
+                ShipmentId = model.ShipmentId,
+                StatusId = model.NewStatusId,
+                ChangedAt = DateTime.Now,
+                Notes = model.Notes
+            };
+
+            _context.DeliveryHistories.Add(history);
+
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Status updated and history recorded." });
+        }
+
         [HttpPut("{id}")]
         public async Task<IActionResult> PutShipment(int id, Shipment shipment)
         {
-            if (id != shipment.ShipmentId)
-                return BadRequest();
+            if (id != shipment.ShipmentId) return BadRequest();
 
-            // --- Safe update block to prevent crashes ---
+            _context.Entry(shipment).State = EntityState.Modified;
+            _context.Entry(shipment).Property(x => x.SendingDate).IsModified = false;
+
             try
             {
-                // Try to load the service type to calculate cost
-                var service = await _context.ServiceTypes.FindAsync(shipment.ServiceTypeId);
-
-                // Check service availability (prevents NullReferenceException)
-                if (service != null)
-                {
-                    // Safe cost calculation
-                    shipment.ShippingCost = service.BasePrice + (shipment.Weight * service.PricePerKg);
-                }
-                else
-                {
-                    // If service type is missing, avoid crash → fallback to zero
-                    shipment.ShippingCost = 0;
-                }
-
-                _context.Entry(shipment).State = EntityState.Modified;
-
-                // Add history log
-                var history = new DeliveryHistory
-                {
-                    ShipmentId = shipment.ShipmentId,
-                    StatusId = shipment.CurrentStatusId,
-                    ChangedAt = DateTime.Now,
-                    Notes = $"Updated. Cost: ${shipment.ShippingCost}"
-                };
-                _context.DeliveryHistories.Add(history);
-
                 await _context.SaveChangesAsync();
             }
-            catch (Exception ex)
+            catch (DbUpdateConcurrencyException)
             {
-                // Return clear server-side error message instead of freezing
-                if (!ShipmentExists(id))
-                    return NotFound();
-                else
-                    return StatusCode(500, $"Internal Server Error: {ex.Message}");
+                if (!ShipmentExists(id)) return NotFound();
+                else throw;
             }
-            // --- End safe update block ---
 
             return NoContent();
         }
 
-
-        // POST: api/Shipments
-        [HttpPost]
-        public async Task<ActionResult<Shipment>> PostShipment(Shipment shipment)
-        {
-            try
-            {
-                // Load service type to calculate cost
-                var service = await _context.ServiceTypes.FindAsync(shipment.ServiceTypeId);
-
-                if (service != null)
-                {
-                    shipment.ShippingCost = service.BasePrice + (shipment.Weight * service.PricePerKg);
-                }
-                else
-                {
-                    shipment.ShippingCost = 0;
-                }
-
-                _context.Shipments.Add(shipment);
-                await _context.SaveChangesAsync();
-
-                // Auto-create initial tracking history
-                var history = new DeliveryHistory
-                {
-                    ShipmentId = shipment.ShipmentId,
-                    StatusId = shipment.CurrentStatusId,
-                    ChangedAt = DateTime.Now,
-                    Notes = $"Created. Cost: ${shipment.ShippingCost}"
-                };
-                _context.DeliveryHistories.Add(history);
-
-                await _context.SaveChangesAsync();
-
-                return CreatedAtAction("GetShipment", new { id = shipment.ShipmentId }, shipment);
-            }
-            catch (Exception ex)
-            {
-                return StatusCode(500, $"Error creating shipment: {ex.Message}");
-            }
-        }
-
-
-        // DELETE: api/Shipments/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteShipment(int id)
         {
             var shipment = await _context.Shipments.FindAsync(id);
-            if (shipment == null)
-            {
-                return NotFound();
-            }
+            if (shipment == null) return NotFound();
 
             _context.Shipments.Remove(shipment);
             await _context.SaveChangesAsync();
@@ -159,25 +149,23 @@ namespace LogisticsNotes.API.Controllers
             return NoContent();
         }
 
-        // --- NEW METHOD: Get History for a specific Shipment ---
-        // GET: api/Shipments/5/History
         [HttpGet("{id}/History")]
-        public async Task<ActionResult<IEnumerable<object>>> GetShipmentHistory(int id)
+        public async Task<ActionResult<IEnumerable<dynamic>>> GetShipmentHistory(int id)
         {
             var history = await _context.DeliveryHistories
                 .Where(h => h.ShipmentId == id)
-                .Include(h => h.Status) // Include Status to get the name
-                .OrderByDescending(h => h.ChangedAt) // Newest first
+                .Include(h => h.Status)
+                .OrderByDescending(h => h.ChangedAt)
                 .Select(h => new
                 {
                     h.HistoryId,
-                    StatusName = h.Status.StatusName,
                     h.ChangedAt,
+                    StatusName = h.Status.StatusName,
                     h.Notes
                 })
                 .ToListAsync();
 
-            return history;
+            return Ok(history);
         }
 
         private bool ShipmentExists(int id)

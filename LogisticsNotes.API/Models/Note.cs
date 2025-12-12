@@ -2,56 +2,52 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
-namespace LogisticsNotes.API.Models
+namespace LogisticsNotes.API.Models;
+
+public partial class Note
 {
-    public partial class Note
-    {
-        [Key]
-        [Column("NoteID")]
-        public int NoteId { get; set; }
+    [Key]
+    [Column("NoteID")]
+    public int NoteId { get; set; }
 
-        [Column("UserID")]
-        public int UserId { get; set; }
+    [Column("UserID")]
+    public int UserId { get; set; }
 
-        [Column("FolderID")]
-        public int? FolderId { get; set; }
+    [Column("FolderID")]
+    public int? FolderId { get; set; }
 
-        [Column("CategoryID")]
-        public int? CategoryId { get; set; }
+    [Column("CategoryID")]
+    public int? CategoryId { get; set; }
 
-        [StringLength(200)]
-        public string Title { get; set; } = null!;
+    [StringLength(100)]
+    public string? Title { get; set; }
 
-        public string? Content { get; set; }
+    public string? Content { get; set; }
 
-        [Column(TypeName = "datetime")]
-        public DateTime? CreatedAt { get; set; }
+    [Column(TypeName = "datetime2")]
+    public DateTime? CreatedAt { get; set; }
 
-        [Column(TypeName = "datetime")]
-        public DateTime? ModifiedAt { get; set; }
+    [Column(TypeName = "datetime2")]
+    public DateTime? ModifiedAt { get; set; }
 
+    [ForeignKey("CategoryId")]
+    [InverseProperty("Notes")]
+    public virtual Category? Category { get; set; }
 
-        [InverseProperty("Note")]
-        public virtual ICollection<Attachment>? Attachments { get; set; } = new List<Attachment>();
+    [ForeignKey("FolderId")]
+    [InverseProperty("Notes")]
+    public virtual Folder? Folder { get; set; }
 
-        [ForeignKey("CategoryId")]
-        [InverseProperty("Notes")]
-        public virtual Category? Category { get; set; }
+    [ForeignKey("UserId")]
+    [InverseProperty("Notes")]
+    public virtual User? User { get; set; }
 
-        [ForeignKey("FolderId")]
-        [InverseProperty("Notes")]
-        public virtual Folder? Folder { get; set; }
+    [InverseProperty("Note")]
+    public virtual ICollection<SharedNote> SharedNotes { get; set; } = new List<SharedNote>();
 
-        [ForeignKey("UserId")]
-        [InverseProperty("Notes")]
-        public virtual User? User { get; set; }
-
-        [InverseProperty("Note")]
-        public virtual ICollection<SharedNote>? SharedNotes { get; set; } = new List<SharedNote>();
-
-        [ForeignKey("NoteId")]
-        [InverseProperty("Notes")]
-        public virtual ICollection<Tag>? Tags { get; set; } = new List<Tag>();
-    }
+    [ForeignKey("NoteId")]
+    [InverseProperty("Notes")]
+    public virtual ICollection<Tag> Tags { get; set; } = new List<Tag>();
 }

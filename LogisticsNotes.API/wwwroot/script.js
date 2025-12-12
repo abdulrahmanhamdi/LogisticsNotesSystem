@@ -113,7 +113,6 @@ function applyRolePermissions(roleId) {
     const navVehicles = document.getElementById("nav-vehicles");
     const newShipmentBtn = document.getElementById("btn-new-shipment");
 
-    // إخفاء الكل افتراضياً
     if (navLogistics) navLogistics.style.display = "none";
     if (navNotes) navNotes.style.display = "none";
     if (navUsers) navUsers.style.display = "none";
@@ -121,28 +120,29 @@ function applyRolePermissions(roleId) {
     if (navVehicles) navVehicles.style.display = "none";
     if (newShipmentBtn) newShipmentBtn.style.display = "none";
 
-    // إظهار حسب الصلاحية
     if (roleId === ROLE_ADMIN) {
-        if (navLogistics) navLogistics.style.display = "flex";
-        if (navNotes) navNotes.style.display = "flex";
-        if (navUsers) navUsers.style.display = "flex";
-        if (navBranches) navBranches.style.display = "flex";
-        if (navVehicles) navVehicles.style.display = "flex";
-        if (newShipmentBtn) newShipmentBtn.style.display = "block";
+        navLogistics.style.display = "flex";
+        navNotes.style.display = "flex";
+        navUsers.style.display = "flex";
+        navBranches.style.display = "flex";
+        navVehicles.style.display = "flex";
+        newShipmentBtn.style.display = "block";
         showSection('logistics');
     }
     else if (roleId === ROLE_CUSTOMER) {
-        if (navLogistics) navLogistics.style.display = "flex";
-        if (navNotes) navNotes.style.display = "flex";
-        if (newShipmentBtn) newShipmentBtn.style.display = "block";
+        navLogistics.style.display = "flex";
+        navNotes.style.display = "flex";
+        newShipmentBtn.style.display = "block";
         showSection('logistics');
     }
     else if (roleId === ROLE_COURIER) {
-        if (navLogistics) navLogistics.style.display = "flex";
-        if (navNotes) navNotes.style.display = "flex";
+        navLogistics.style.display = "flex";
+        navNotes.style.display = "flex";
+        newShipmentBtn.style.display = "none";
         showSection('logistics');
     }
 }
+
 
 function loadAllData() {
     getShipments();
@@ -164,9 +164,17 @@ async function getShipments() {
         if (res.ok) {
             let data = await res.json();
 
-            // العميل يرى شحناته فقط
             if (CURRENT_USER.roleId === ROLE_CUSTOMER) {
                 data = data.filter(s => s.senderId === CURRENT_USER.userId);
+            }
+            else if (CURRENT_USER.roleId === ROLE_COURIER) {
+                // Courier filter logic (kept empty because original logic was commented out)
+                /*
+                data = data.filter(s => 
+                    s.assignedCourier?.userId === CURRENT_USER.userId ||
+                    s.assignedCourierId === null
+                );
+                */
             }
 
             ALL_SHIPMENTS = data;
@@ -178,7 +186,9 @@ async function getShipments() {
             if (totalEl) totalEl.innerText = data.length;
             if (pendingEl) pendingEl.innerText = data.filter(s => s.currentStatusId === 1).length;
         }
-    } catch (e) { console.error("Error loading shipments", e); }
+    } catch (e) {
+        console.error("Error loading shipments", e);
+    }
 }
 
 function renderShipments(data) {
@@ -199,7 +209,6 @@ function renderShipments(data) {
 
         if (isAdmin) {
             actionButtons = `
-                <button class="btn btn-sm btn-outline-success btn-action" onclick="openPaymentModal(${s.shipmentId})" title="Payments"><i class="fas fa-dollar-sign"></i></button>
                 <button class="btn btn-sm btn-outline-warning btn-action" onclick="openStatusModal(${s.shipmentId})" title="Status"><i class="fas fa-truck-loading"></i></button>
                 <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})" title="Edit"><i class="fas fa-edit"></i></button>
                 <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})" title="Delete"><i class="fas fa-trash"></i></button>
@@ -210,7 +219,6 @@ function renderShipments(data) {
             `;
         } else {
             actionButtons = `
-                <button class="btn btn-sm btn-outline-success btn-action" onclick="openPaymentModal(${s.shipmentId})" title="View Payments"><i class="fas fa-dollar-sign"></i></button>
                 <button class="btn btn-sm btn-outline-info btn-action" onclick="openStatusModal(${s.shipmentId})" title="View History"><i class="fas fa-eye"></i></button>
             `;
         }
@@ -898,6 +906,7 @@ async function openStatusModal(id) {
     document.getElementById("statusShipmentId").value = id;
     const statusForm = document.getElementById("statusForm");
     const modalTitle = document.querySelector("#statusModal .modal-title");
+
     const isCustomer = CURRENT_USER.roleId === ROLE_CUSTOMER;
 
     if (isCustomer) {
@@ -906,52 +915,85 @@ async function openStatusModal(id) {
     } else {
         statusForm.style.display = "block";
         modalTitle.innerText = "Update Shipment Status";
-        const res = await fetch(`${API_URL}/ShipmentStatus`);
+
+        const res = await fetch(`${API_URL}/ShipmentStatuses`);
         if (res.ok) {
             const statuses = await res.json();
             const sel = document.getElementById("newStatusSelect");
             sel.innerHTML = "";
             statuses.forEach(st => sel.innerHTML += `<option value="${st.statusId}">${st.statusName}</option>`);
         }
+
+        document.getElementById("statusNotes").value = "";
     }
+
     const historyRes = await fetch(`${API_URL}/Shipments/${id}/History`);
     const historyBody = document.getElementById("historyTableBody");
     historyBody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
+
     if (historyRes.ok) {
         const historyData = await historyRes.json();
         historyBody.innerHTML = "";
-        if (historyData.length === 0) historyBody.innerHTML = "<tr><td colspan='3' class='text-center text-muted'>No history yet.</td></tr>";
-        else {
+
+        if (historyData.length === 0) {
+            historyBody.innerHTML = "<tr><td colspan='3' class='text-center text-muted'>No history yet.</td></tr>";
+        } else {
             historyData.forEach(h => {
-                historyBody.innerHTML += `<tr><td>${new Date(h.changedAt).toLocaleString()}</td><td><span class="badge bg-secondary">${h.statusName}</span></td><td>${h.notes || '-'}</td></tr>`;
+                historyBody.innerHTML += `
+                    <tr>
+                        <td>${new Date(h.changedAt).toLocaleString()}</td>
+                        <td><span class="badge bg-secondary">${h.statusName}</span></td>
+                        <td>${h.notes || '-'}</td>
+                    </tr>`;
             });
         }
     }
+
     new bootstrap.Modal(document.getElementById('statusModal')).show();
 }
+
 const statusForm = document.getElementById("statusForm");
 if (statusForm) {
     statusForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+
         const id = document.getElementById("statusShipmentId").value;
         const newStatusId = parseInt(document.getElementById("newStatusSelect").value);
+        const notesVal = document.getElementById("statusNotes").value;
 
-        const oldRes = await fetch(`${API_URL}/Shipments/${id}`);
-        const shipment = await oldRes.json();
-        shipment.currentStatusId = newStatusId;
-        if (newStatusId === 5) shipment.deliveredAt = new Date().toISOString(); // Delivered
+        const payload = {
+            shipmentId: parseInt(id),
+            newStatusId: newStatusId,
+            notes: notesVal
+        };
 
-        await fetch(`${API_URL}/Shipments/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(shipment) });
+        try {
+            const res = await fetch(`${API_URL}/Shipments/UpdateStatus`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
 
-
-        bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
-        getShipments();
+            if (res.ok) {
+                alert("Status Updated & Note Sent! ✅");
+                bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
+                getShipments();
+            } else {
+                const err = await res.json();
+                alert("Error: " + (err.message || "Failed to update status"));
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Connection error.");
+        }
     });
 }
+
 function getStatusBadge(statusId) {
     if (statusId === 1) return "bg-warning text-dark"; // Pending
     if (statusId === 2) return "bg-info text-white"; // Picked Up
     if (statusId === 3) return "bg-primary"; // In Transit
+    if (statusId === 4) return "bg-primary"; // Ready
     if (statusId === 5) return "bg-success"; // Delivered
     if (statusId === 6) return "bg-danger"; // Cancelled
     return "bg-secondary";
