@@ -24,7 +24,12 @@ namespace LogisticsNotes.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Shipment>>> GetShipments()
         {
-            return await _context.Shipments.ToListAsync();
+            return await _context.Shipments
+                .Include(s => s.OriginBranch)      
+                .Include(s => s.DestinationBranch)
+                .Include(s => s.CurrentStatus)      
+                .Include(s => s.ServiceType)        
+                .ToListAsync();
         }
 
         // GET: api/Shipments/5

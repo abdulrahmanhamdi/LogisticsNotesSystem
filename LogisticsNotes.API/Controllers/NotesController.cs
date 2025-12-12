@@ -20,13 +20,25 @@ namespace LogisticsNotes.API.Controllers
             _context = context;
         }
 
+        public class NoteInputModel
+        {
+            public int NoteId { get; set; }
+            public int UserId { get; set; }
+            public string Title { get; set; }
+            public string Content { get; set; }
+            public int? CategoryId { get; set; }
+            public int? FolderId { get; set; }
+            public List<int> TagIds { get; set; } = new List<int>(); 
+        }
+
         // GET: api/Notes
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Note>>> GetNotes()
         {
             return await _context.Notes
-                .Include(n => n.Category) 
-                .Include(n => n.Folder)   
+                .Include(n => n.Category)
+                .Include(n => n.Folder)
+                .Include(n => n.Tags)
                 .ToListAsync();
         }
 
@@ -37,27 +49,70 @@ namespace LogisticsNotes.API.Controllers
             var note = await _context.Notes
                 .Include(n => n.Category)
                 .Include(n => n.Folder)
+                .Include(n => n.Tags)
                 .FirstOrDefaultAsync(n => n.NoteId == id);
 
-            if (note == null)
-            {
-                return NotFound();
-            }
+            if (note == null) return NotFound();
 
             return note;
         }
 
-        // PUT: api/Notes/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutNote(int id, Note note)
+        // POST: api/Notes
+        [HttpPost]
+        public async Task<ActionResult<Note>> PostNote(NoteInputModel input)
         {
-            if (id != note.NoteId)
+            var note = new Note
             {
-                return BadRequest();
+                UserId = input.UserId,
+                Title = input.Title,
+                Content = input.Content,
+                CategoryId = input.CategoryId,
+                FolderId = input.FolderId,
+                CreatedAt = DateTime.Now
+            };
+
+            if (input.TagIds != null && input.TagIds.Any())
+            {
+                foreach (var tagId in input.TagIds)
+                {
+                    var tag = await _context.Tags.FindAsync(tagId);
+                    if (tag != null) note.Tags.Add(tag);
+                }
             }
 
-            _context.Entry(note).State = EntityState.Modified;
+            _context.Notes.Add(note);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction("GetNote", new { id = note.NoteId }, note);
+        }
+
+        // PUT: api/Notes/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> PutNote(int id, NoteInputModel input)
+        {
+            if (id != input.NoteId) return BadRequest();
+
+            var existingNote = await _context.Notes
+                .Include(n => n.Tags)
+                .FirstOrDefaultAsync(n => n.NoteId == id);
+
+            if (existingNote == null) return NotFound();
+
+            existingNote.Title = input.Title;
+            existingNote.Content = input.Content;
+            existingNote.CategoryId = input.CategoryId;
+            existingNote.FolderId = input.FolderId;
+            existingNote.ModifiedAt = DateTime.Now;
+
+            existingNote.Tags.Clear();
+            if (input.TagIds != null && input.TagIds.Any())
+            {
+                foreach (var tagId in input.TagIds)
+                {
+                    var tag = await _context.Tags.FindAsync(tagId);
+                    if (tag != null) existingNote.Tags.Add(tag);
+                }
+            }
 
             try
             {
@@ -65,28 +120,10 @@ namespace LogisticsNotes.API.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!NoteExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                throw;
             }
 
             return NoContent();
-        }
-
-        // POST: api/Notes
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Note>> PostNote(Note note)
-        {
-            _context.Notes.Add(note);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetNote", new { id = note.NoteId }, note);
         }
 
         // DELETE: api/Notes/5
@@ -94,20 +131,12 @@ namespace LogisticsNotes.API.Controllers
         public async Task<IActionResult> DeleteNote(int id)
         {
             var note = await _context.Notes.FindAsync(id);
-            if (note == null)
-            {
-                return NotFound();
-            }
+            if (note == null) return NotFound();
 
             _context.Notes.Remove(note);
             await _context.SaveChangesAsync();
 
             return NoContent();
-        }
-
-        private bool NoteExists(int id)
-        {
-            return _context.Notes.Any(e => e.NoteId == id);
         }
     }
 }

@@ -7,15 +7,24 @@ const ROLE_ADMIN = 1;
 const ROLE_CUSTOMER = 2;
 const ROLE_COURIER = 3;
 
-// ================= 1. LOGIN & LOGOUT =================
+// ================= 1. LOGIN & AUTHENTICATION =================
 
 document.addEventListener("DOMContentLoaded", () => {
-    const loginForm = document.getElementById("loginForm");
+    const storedUser = localStorage.getItem("LOGI_USER");
+    if (storedUser) {
+        try {
+            CURRENT_USER = JSON.parse(storedUser);
+            showDashboard(); 
+        } catch (e) {
+            console.error("Error parsing stored user", e);
+            localStorage.removeItem("LOGI_USER");
+        }
+    }
 
+    const loginForm = document.getElementById("loginForm");
     if (loginForm) {
         loginForm.addEventListener("submit", async (e) => {
             e.preventDefault();
-
             const email = document.getElementById("loginEmail").value;
             const pass = document.getElementById("loginPassword").value;
             const errorBox = document.getElementById("loginError");
@@ -33,18 +42,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     const user = await res.json();
                     CURRENT_USER = user;
 
-                    document.getElementById("login-screen").classList.add("hidden");
-                    document.getElementById("login-screen").style.display = "none";
+                    localStorage.setItem("LOGI_USER", JSON.stringify(user));
 
-                    const dashboard = document.getElementById("dashboard-screen");
-                    dashboard.classList.remove("hidden");
-                    dashboard.style.display = "flex";
-
-                    document.getElementById("userNameDisplay").innerText = `${user.firstName} ${user.lastName}`;
-                    document.getElementById("userRoleDisplay").innerText = user.role ? user.role.roleName : "User";
-
-                    applyRolePermissions(user.roleId);
-                    loadAllData();
+                    showDashboard();
                 } else {
                     errorBox.classList.remove("hidden");
                     errorBox.innerText = "Incorrect login details!";
@@ -52,15 +52,38 @@ document.addEventListener("DOMContentLoaded", () => {
             } catch (err) {
                 console.error("Login Error:", err);
                 errorBox.classList.remove("hidden");
-                errorBox.innerText = "Error connecting to the server!";
+                errorBox.innerText = "Error connecting to the server! Check if backend is running.";
             }
         });
     }
 });
 
+function showDashboard() {
+    const loginScreen = document.getElementById("login-screen");
+    if (loginScreen) {
+        loginScreen.classList.add("hidden");
+        loginScreen.style.display = "none";
+    }
+
+    const dashboard = document.getElementById("dashboard-screen");
+    if (dashboard) {
+        dashboard.classList.remove("hidden");
+        dashboard.style.display = "flex";
+    }
+
+    if (CURRENT_USER) {
+        document.getElementById("userNameDisplay").innerText = `${CURRENT_USER.firstName} ${CURRENT_USER.lastName}`;
+        document.getElementById("userRoleDisplay").innerText = CURRENT_USER.role ? CURRENT_USER.role.roleName : "User";
+        applyRolePermissions(CURRENT_USER.roleId);
+
+        loadAllData();
+    }
+}
+
 function logout() {
     CURRENT_USER = null;
-    window.location.reload();
+    localStorage.removeItem("LOGI_USER"); 
+    window.location.reload(); 
 }
 
 // ================= 2. NAVIGATION & ROLE ACCESS =================
@@ -89,7 +112,7 @@ function applyRolePermissions(roleId) {
     const navVehicles = document.getElementById("nav-vehicles");
     const newShipmentBtn = document.getElementById("btn-new-shipment");
 
-    // Hide All
+    // إخفاء الكل افتراضياً
     if (navLogistics) navLogistics.style.display = "none";
     if (navNotes) navNotes.style.display = "none";
     if (navUsers) navUsers.style.display = "none";
@@ -97,7 +120,7 @@ function applyRolePermissions(roleId) {
     if (navVehicles) navVehicles.style.display = "none";
     if (newShipmentBtn) newShipmentBtn.style.display = "none";
 
-    // Show per Role
+    // إظهار حسب الصلاحية
     if (roleId === ROLE_ADMIN) {
         if (navLogistics) navLogistics.style.display = "flex";
         if (navNotes) navNotes.style.display = "flex";
@@ -122,34 +145,39 @@ function applyRolePermissions(roleId) {
 
 function loadAllData() {
     getShipments();
-    getNotes();
-    getUsers();
-    getRoles();
-    getBranchesTable();
-    loadShipmentLookups();
-    if (CURRENT_USER && CURRENT_USER.roleId === ROLE_ADMIN) getVehicles();
+    getNotes(); // سيجلب المجلدات والتاغات داخلياً
+    if (CURRENT_USER.roleId === ROLE_ADMIN) {
+        getUsers();
+        getRoles(); // للمودال
+        getBranchesTable();
+        getVehicles();
+    }
+    loadShipmentLookups(); // لتجهيز قوائم الشحنات
 }
 
 // ================= 3. SHIPMENTS LOGIC =================
 
 async function getShipments() {
-    const res = await fetch(`${API_URL}/Shipments`);
-    if (res.ok) {
-        let data = await res.json();
+    try {
+        const res = await fetch(`${API_URL}/Shipments`);
+        if (res.ok) {
+            let data = await res.json();
 
-        if (CURRENT_USER.roleId === ROLE_CUSTOMER) {
-            data = data.filter(s => s.senderId === CURRENT_USER.userId);
+            // العميل يرى شحناته فقط
+            if (CURRENT_USER.roleId === ROLE_CUSTOMER) {
+                data = data.filter(s => s.senderId === CURRENT_USER.userId);
+            }
+
+            ALL_SHIPMENTS = data;
+            renderShipments(data);
+
+            const totalEl = document.getElementById("stat-total-shipments");
+            const pendingEl = document.getElementById("stat-pending-shipments");
+
+            if (totalEl) totalEl.innerText = data.length;
+            if (pendingEl) pendingEl.innerText = data.filter(s => s.currentStatusId === 1).length;
         }
-
-        ALL_SHIPMENTS = data;
-        renderShipments(data);
-
-        const totalEl = document.getElementById("stat-total-shipments");
-        const pendingEl = document.getElementById("stat-pending-shipments");
-
-        if (totalEl) totalEl.innerText = data.length;
-        if (pendingEl) pendingEl.innerText = data.filter(s => s.currentStatusId === 1).length;
-    }
+    } catch (e) { console.error("Error loading shipments", e); }
 }
 
 function renderShipments(data) {
@@ -166,8 +194,6 @@ function renderShipments(data) {
     if (actionsHeader) actionsHeader.style.display = "";
 
     data.forEach(s => {
-        if (isCustomer && s.senderId !== CURRENT_USER.userId) return;
-
         let actionButtons = '';
 
         if (isAdmin) {
@@ -192,13 +218,23 @@ function renderShipments(data) {
             ? `<span class="fw-bold text-success">$${s.shippingCost}</span>`
             : `<span class="fw-bold text-danger">$0</span>`;
 
+        // عرض اسم الفرع بدلاً من الرقم إذا كان الـ object موجوداً
+        const originName = s.originBranch ? s.originBranch.branchName : s.originBranchId;
+        const destName = s.destinationBranch ? s.destinationBranch.branchName : s.destinationBranchId;
+
+        // تلميح الحالة
+        const statusDesc = s.currentStatus ? s.currentStatus.description : "";
+
         tbody.innerHTML += `
             <tr>
                 <td>#${s.shipmentId}</td>
-                <td>${s.description}</td>
+                <td>
+                    <div class="fw-bold">${s.description}</div>
+                    <small class="text-muted">${originName} &rarr; ${destName}</small>
+                </td>
                 <td>${s.weight} KG</td>
                 <td>${costDisplay}</td>
-                <td><span class="badge ${getStatusBadge(s.currentStatusId)}">${getStatusName(s.currentStatusId)}</span></td>
+                <td><span class="badge ${getStatusBadge(s.currentStatusId)}" title="${statusDesc}">${s.currentStatus ? s.currentStatus.statusName : s.currentStatusId}</span></td>
                 <td>${new Date(s.sendingDate).toLocaleDateString()}</td>
                 <td>${actionButtons}</td>
             </tr>`;
@@ -218,7 +254,7 @@ if (searchInput) {
 }
 
 function openShipmentModal() {
-    if (CURRENT_USER.roleId === ROLE_COURIER) return alert("You are not authorized to create new shipments.");
+    if (CURRENT_USER.roleId === ROLE_COURIER) return alert("Unauthorized");
     document.getElementById("shipmentForm").reset();
     document.getElementById("sId").value = "";
     document.getElementById("shipmentModalTitle").innerText = "Add New Shipment";
@@ -232,12 +268,16 @@ async function editShipment(id) {
     document.getElementById("sId").value = s.shipmentId;
     document.getElementById("sDesc").value = s.description;
     document.getElementById("sWeight").value = s.weight;
+
+    // ننتظر تحميل القوائم للتأكد من تعيين القيم
+    await loadShipmentLookups();
+
     if (document.getElementById("sOrigin")) document.getElementById("sOrigin").value = s.originBranchId;
     if (document.getElementById("sDest")) document.getElementById("sDest").value = s.destinationBranchId;
     if (document.getElementById("sService")) document.getElementById("sService").value = s.serviceTypeId;
     if (document.getElementById("sCourier")) document.getElementById("sCourier").value = s.assignedCourierId || "";
+
     document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
-    loadShipmentLookups();
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
 
@@ -247,7 +287,7 @@ if (shipmentForm) {
         e.preventDefault();
 
         const weightVal = parseFloat(document.getElementById("sWeight").value);
-        if (weightVal <= 0) return alert("Error: Weight cannot be negative or zero!");
+        if (weightVal <= 0) return alert("Weight cannot be negative or zero!");
 
         const id = document.getElementById("sId").value;
         const isEdit = id ? true : false;
@@ -268,9 +308,12 @@ if (shipmentForm) {
 
         const method = isEdit ? "PUT" : "POST";
         const url = isEdit ? `${API_URL}/Shipments/${id}` : `${API_URL}/Shipments`;
-        await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        bootstrap.Modal.getInstance(document.getElementById('shipmentModal')).hide();
-        getShipments();
+
+        const res = await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('shipmentModal')).hide();
+            getShipments();
+        } else { alert("Error saving shipment"); }
     });
 }
 
@@ -289,6 +332,10 @@ async function loadShipmentLookups() {
             const originSel = document.getElementById("sOrigin");
             const destSel = document.getElementById("sDest");
             if (originSel && destSel) {
+                // حفظ القيمة الحالية إذا كنا في وضع التعديل
+                const currentOrigin = originSel.value;
+                const currentDest = destSel.value;
+
                 originSel.innerHTML = "";
                 destSel.innerHTML = "";
                 branches.forEach(b => {
@@ -296,6 +343,9 @@ async function loadShipmentLookups() {
                     originSel.innerHTML += opt;
                     destSel.innerHTML += opt;
                 });
+
+                if (currentOrigin) originSel.value = currentOrigin;
+                if (currentDest) destSel.value = currentDest;
             }
         }
         const resS = await fetch(`${API_URL}/ServiceTypes`);
@@ -303,12 +353,14 @@ async function loadShipmentLookups() {
             const types = await resS.json();
             const serviceSel = document.getElementById("sService");
             if (serviceSel) {
+                const current = serviceSel.value;
                 serviceSel.innerHTML = '<option value="" disabled selected>-- Select Type --</option>';
                 types.forEach(t => {
                     const id = t.serviceTypeId || t.ServiceTypeId;
                     const name = t.typeName || t.TypeName;
-                    serviceSel.innerHTML += `<option value="${id}">${name}</option>`;
+                    serviceSel.innerHTML += `<option value="${id}">${name} ($${t.basePrice} + $${t.pricePerKg}/kg)</option>`;
                 });
+                if (current) serviceSel.value = current;
             }
         }
         const resC = await fetch(`${API_URL}/Couriers`);
@@ -316,75 +368,87 @@ async function loadShipmentLookups() {
             const couriers = await resC.json();
             const courierSel = document.getElementById("sCourier");
             if (courierSel) {
+                const current = courierSel.value;
                 courierSel.innerHTML = '<option value="">-- Unassigned --</option>';
                 couriers.forEach(c => {
                     const name = c.user ? `${c.user.firstName} ${c.user.lastName}` : `Courier #${c.courierId}`;
                     courierSel.innerHTML += `<option value="${c.courierId}">${name}</option>`;
                 });
+                if (current) courierSel.value = current;
             }
         }
     } catch (e) { console.error("Error loading lookups", e); }
 }
 
-// ================= 4. NOTES LOGIC =================
+// ================= 4. NOTES LOGIC (FULL FEATURES) =================
 
 async function loadNoteLookups() {
     try {
+        // 1. Categories
         const resCat = await fetch(`${API_URL}/Categories`);
         if (resCat.ok) {
             const categories = await resCat.json();
             const catSelect = document.getElementById("nCategory");
             catSelect.innerHTML = '<option value="">-- No Category --</option>';
-            categories.forEach(c => {
-                catSelect.innerHTML += `<option value="${c.categoryId}">${c.categoryName}</option>`;
-            });
+            categories.forEach(c => catSelect.innerHTML += `<option value="${c.categoryId}">${c.categoryName}</option>`);
         }
 
+        // 2. Folders
         const resFold = await fetch(`${API_URL}/Folders`);
         if (resFold.ok) {
             let folders = await resFold.json();
-            if (CURRENT_USER.roleId !== ROLE_ADMIN) {
-                folders = folders.filter(f => f.userId === CURRENT_USER.userId);
-            }
-
+            if (CURRENT_USER.roleId !== ROLE_ADMIN) folders = folders.filter(f => f.userId === CURRENT_USER.userId);
             const foldSelect = document.getElementById("nFolder");
             foldSelect.innerHTML = '<option value="">-- No Folder --</option>';
-            folders.forEach(f => {
-                foldSelect.innerHTML += `<option value="${f.folderId}">${f.folderName}</option>`;
-            });
+            folders.forEach(f => foldSelect.innerHTML += `<option value="${f.folderId}">${f.folderName}</option>`);
+        }
+
+        // 3. TAGS - Checkboxes
+        const resTags = await fetch(`${API_URL}/Tags`);
+        if (resTags.ok) {
+            const tags = await resTags.json();
+            const container = document.getElementById("tagsContainer");
+            if (container) {
+                container.innerHTML = "";
+                tags.forEach(t => {
+                    container.innerHTML += `
+                        <div class="form-check">
+                            <input class="form-check-input note-tag-check" type="checkbox" value="${t.tagId}" id="tag-${t.tagId}">
+                            <label class="form-check-label" for="tag-${t.tagId}">
+                                ${t.tagName}
+                            </label>
+                        </div>`;
+                });
+            }
         }
     } catch (e) { console.error("Error loading note lookups", e); }
 }
 
 async function getNotes() {
-    const res = await fetch(`${API_URL}/Notes`);
-    if (res.ok) {
-        const data = await res.json();
+    try {
+        const res = await fetch(`${API_URL}/Notes`);
+        if (res.ok) {
+            const data = await res.json();
+            let displayNotes = (CURRENT_USER.roleId === ROLE_ADMIN) ? data : data.filter(n => n.userId === CURRENT_USER.userId);
 
-        let displayNotes = [];
-        if (CURRENT_USER.roleId === ROLE_ADMIN) {
-            displayNotes = data;
-        } else {
-            displayNotes = data.filter(n => n.userId === CURRENT_USER.userId);
-        }
+            const countEl = document.getElementById("stat-total-notes");
+            if (countEl) countEl.innerText = displayNotes.length;
 
-        const totalNotesEl = document.getElementById("stat-total-notes");
-        if (totalNotesEl) totalNotesEl.innerText = displayNotes.length;
-
-        const list = document.getElementById("notesList");
-        if (list) {
+            const list = document.getElementById("notesList");
+            if (!list) return;
             list.innerHTML = "";
+
             displayNotes.forEach(n => {
-                const ownerTag = (CURRENT_USER.roleId === ROLE_ADMIN && n.userId !== CURRENT_USER.userId)
-                    ? `<small class="text-primary d-block mb-1">(User #${n.userId})</small>` : "";
+                const ownerTag = (CURRENT_USER.roleId === ROLE_ADMIN && n.userId !== CURRENT_USER.userId) ? `<small class="text-primary d-block mb-1">(User #${n.userId})</small>` : "";
+                const catBadge = n.category ? `<span class="badge bg-info text-dark me-1"><i class="fas fa-tag"></i> ${n.category.categoryName}</span>` : "";
+                const foldBadge = n.folder ? `<span class="badge bg-warning text-dark me-1"><i class="fas fa-folder"></i> ${n.folder.folderName}</span>` : "";
 
-                const categoryBadge = n.category
-                    ? `<span class="badge bg-info text-dark me-1"><i class="fas fa-tag"></i> ${n.category.categoryName}</span>`
-                    : "";
-
-                const folderBadge = n.folder
-                    ? `<span class="badge bg-warning text-dark"><i class="fas fa-folder"></i> ${n.folder.folderName}</span>`
-                    : "";
+                let tagsHtml = "";
+                if (n.tags && n.tags.length > 0) {
+                    n.tags.forEach(t => {
+                        tagsHtml += `<span class="badge bg-secondary rounded-pill me-1" style="font-size:0.7rem;">#${t.tagName}</span>`;
+                    });
+                }
 
                 list.innerHTML += `
                     <div class="col-md-4 mb-3">
@@ -401,31 +465,29 @@ async function getNotes() {
                                     </div>
                                 </div>
                                 ${ownerTag}
-                                <div class="mb-2">
-                                    ${categoryBadge} ${folderBadge}
-                                </div>
+                                <div class="mb-2">${catBadge} ${foldBadge}</div>
+                                <div class="mb-2">${tagsHtml}</div>
                                 <p class="card-text text-muted" style="white-space: pre-wrap;">${n.content}</p>
-                                <small class="text-muted" style="font-size: 0.8rem;">Updated: ${new Date(n.createdAt).toLocaleDateString()}</small>
+                                <small class="text-muted" style="font-size: 0.8rem;">Updated: ${n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '-'}</small>
                             </div>
                         </div>
                     </div>`;
             });
         }
-    }
+    } catch (e) { console.error("Error getting notes", e); }
 }
 
 function openNoteModal() {
     document.getElementById("noteForm").reset();
     document.getElementById("nId").value = "";
     document.getElementById("noteModalTitle").innerText = "New Note";
-    loadNoteLookups(); 
+    loadNoteLookups();
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
 
 async function editNote(id) {
     const res = await fetch(`${API_URL}/Notes/${id}`);
     const n = await res.json();
-
     await loadNoteLookups();
 
     document.getElementById("nId").value = n.noteId;
@@ -434,6 +496,13 @@ async function editNote(id) {
 
     if (document.getElementById("nCategory")) document.getElementById("nCategory").value = n.categoryId || "";
     if (document.getElementById("nFolder")) document.getElementById("nFolder").value = n.folderId || "";
+
+    if (n.tags && n.tags.length > 0) {
+        n.tags.forEach(t => {
+            const checkbox = document.getElementById(`tag-${t.tagId}`);
+            if (checkbox) checkbox.checked = true;
+        });
+    }
 
     document.getElementById("noteModalTitle").innerText = "Edit Note";
     new bootstrap.Modal(document.getElementById('noteModal')).show();
@@ -446,16 +515,19 @@ if (noteForm) {
         const id = document.getElementById("nId").value;
         const isEdit = id ? true : false;
 
-        const catVal = document.getElementById("nCategory").value;
-        const foldVal = document.getElementById("nFolder").value;
+        const selectedTagIds = [];
+        document.querySelectorAll('.note-tag-check:checked').forEach(cb => {
+            selectedTagIds.push(parseInt(cb.value));
+        });
 
         const payload = {
             noteId: isEdit ? parseInt(id) : 0,
             userId: CURRENT_USER.userId,
             title: document.getElementById("nTitle").value,
             content: document.getElementById("nContent").value,
-            categoryId: catVal ? parseInt(catVal) : null, // إرسال null إذا لم يتم الاختيار
-            folderId: foldVal ? parseInt(foldVal) : null
+            categoryId: document.getElementById("nCategory").value ? parseInt(document.getElementById("nCategory").value) : null,
+            folderId: document.getElementById("nFolder").value ? parseInt(document.getElementById("nFolder").value) : null,
+            tagIds: selectedTagIds 
         };
 
         const method = isEdit ? "PUT" : "POST";
@@ -473,7 +545,8 @@ async function deleteNote(id) {
         getNotes();
     }
 }
-// ================= 5. USERS LOGIC (CRUD) =================
+
+// ================= 5. USERS LOGIC (CRUD + Manual ID) =================
 
 let isEditingUser = false;
 
@@ -504,8 +577,11 @@ async function getUsers() {
 function openUserModal() {
     isEditingUser = false;
     document.getElementById("userForm").reset();
-    document.getElementById("uId").disabled = false; // Allow ID for new users
+    document.getElementById("uId").disabled = false; 
     document.getElementById("userModalTitle").innerText = "New User";
+
+    getRoles();
+
     new bootstrap.Modal(document.getElementById('userModal')).show();
 }
 
@@ -522,8 +598,10 @@ async function editUser(id) {
         document.getElementById("uRole").value = u.roleId;
         document.getElementById("uPass").value = "";
 
-        document.getElementById("uId").disabled = true; // Lock ID during edit
+        document.getElementById("uId").disabled = true; 
         document.getElementById("userModalTitle").innerText = "Edit User";
+
+        await getRoles();
         new bootstrap.Modal(document.getElementById('userModal')).show();
     }
 }
@@ -552,7 +630,10 @@ if (userForm) {
         if (res.ok) {
             bootstrap.Modal.getInstance(document.getElementById('userModal')).hide();
             getUsers();
-        } else { alert("Error saving user!"); }
+        } else {
+            const errData = await res.json();
+            alert("Error saving user: " + (errData.message || "Unknown Error"));
+        }
     });
 }
 
@@ -569,8 +650,10 @@ async function getRoles() {
         const data = await res.json();
         const sel = document.getElementById("uRole");
         if (sel) {
+            const current = sel.value;
             sel.innerHTML = "";
             data.forEach(r => sel.innerHTML += `<option value="${r.roleId}">${r.roleName}</option>`);
+            if (current) sel.value = current;
         }
     }
 }
@@ -663,26 +746,26 @@ if (statusForm) {
         e.preventDefault();
         const id = document.getElementById("statusShipmentId").value;
         const newStatusId = parseInt(document.getElementById("newStatusSelect").value);
+
         const oldRes = await fetch(`${API_URL}/Shipments/${id}`);
         const shipment = await oldRes.json();
         shipment.currentStatusId = newStatusId;
-        if (newStatusId === 5) shipment.deliveredAt = new Date().toISOString();
+        if (newStatusId === 5) shipment.deliveredAt = new Date().toISOString(); // Delivered
+
         await fetch(`${API_URL}/Shipments/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(shipment) });
+
+
         bootstrap.Modal.getInstance(document.getElementById('statusModal')).hide();
         getShipments();
     });
 }
 function getStatusBadge(statusId) {
-    if (statusId === 1) return "bg-warning text-dark";
-    if (statusId === 2) return "bg-info text-white";
-    if (statusId === 3) return "bg-primary";
-    if (statusId === 5) return "bg-success";
-    if (statusId === 6) return "bg-danger";
+    if (statusId === 1) return "bg-warning text-dark"; // Pending
+    if (statusId === 2) return "bg-info text-white"; // Picked Up
+    if (statusId === 3) return "bg-primary"; // In Transit
+    if (statusId === 5) return "bg-success"; // Delivered
+    if (statusId === 6) return "bg-danger"; // Cancelled
     return "bg-secondary";
-}
-function getStatusName(statusId) {
-    const names = { 1: "Pending", 2: "Picked Up", 3: "In Transit", 4: "Ready", 5: "Delivered", 6: "Cancelled" };
-    return names[statusId] || `Status ${statusId}`;
 }
 
 // ================= 8. PAYMENTS LOGIC =================
@@ -743,20 +826,22 @@ if (paymentForm) {
 // ================= 9. VEHICLES LOGIC =================
 
 async function getVehicles() {
-    const res = await fetch(`${API_URL}/Vehicles`);
-    if (res.ok) {
-        const data = await res.json();
-        const tbody = document.getElementById("vehiclesTable");
-        if (tbody) {
-            tbody.innerHTML = "";
-            data.forEach(v => {
-                let badgeClass = "bg-success";
-                if (v.status === "Busy") badgeClass = "bg-warning text-dark";
-                if (v.status === "Maintenance") badgeClass = "bg-danger";
-                tbody.innerHTML += `<tr><td>${v.vehicleId}</td><td class="fw-bold">${v.licensePlate}</td><td>${v.model}</td><td>${v.capacity} KG</td><td><span class="badge ${badgeClass}">${v.status}</span></td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteVehicle(${v.vehicleId})"><i class="fas fa-trash"></i></button></td></tr>`;
-            });
+    try {
+        const res = await fetch(`${API_URL}/Vehicles`);
+        if (res.ok) {
+            const data = await res.json();
+            const tbody = document.getElementById("vehiclesTable");
+            if (tbody) {
+                tbody.innerHTML = "";
+                data.forEach(v => {
+                    let badgeClass = "bg-success";
+                    if (v.status === "Busy") badgeClass = "bg-warning text-dark";
+                    if (v.status === "Maintenance") badgeClass = "bg-danger";
+                    tbody.innerHTML += `<tr><td>${v.vehicleId}</td><td class="fw-bold">${v.licensePlate}</td><td>${v.model}</td><td>${v.capacity} KG</td><td><span class="badge ${badgeClass}">${v.status}</span></td><td><button class="btn btn-sm btn-outline-danger" onclick="deleteVehicle(${v.vehicleId})"><i class="fas fa-trash"></i></button></td></tr>`;
+                });
+            }
         }
-    }
+    } catch (e) { console.error("Error getting vehicles", e); }
 }
 function openVehicleModal() {
     document.getElementById("vehicleForm").reset();
