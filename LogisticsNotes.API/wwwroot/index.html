@@ -274,9 +274,32 @@
                 <div class="modal-body">
                     <form id="noteForm">
                         <input type="hidden" id="nId">
-                        <div class="mb-3"><label>Title</label><input type="text" class="form-control" id="nTitle" required></div>
-                        <div class="mb-3"><label>Content</label><textarea class="form-control" id="nContent" rows="4" required></textarea></div>
-                        <button type="submit" class="btn btn-success w-100">Save</button>
+
+                        <div class="mb-3">
+                            <label>Title</label>
+                            <input type="text" class="form-control" id="nTitle" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label>Category</label>
+                                <select class="form-select" id="nCategory">
+                                    <option value="">-- No Category --</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label>Folder</label>
+                                <select class="form-select" id="nFolder">
+                                    <option value="">-- No Folder --</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label>Content</label>
+                            <textarea class="form-control" id="nContent" rows="4" required></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-success w-100">Save Note</button>
                     </form>
                 </div>
             </div>

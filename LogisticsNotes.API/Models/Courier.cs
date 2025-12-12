@@ -19,6 +19,11 @@ public partial class Courier
     [Column("CurrentBranchID")]
     public int? CurrentBranchId { get; set; }
 
+    // --- الإضافة الجديدة ---
+    [Column("VehicleID")]
+    public int? VehicleId { get; set; }
+    // -----------------------
+
     [StringLength(50)]
     public string LicenseNumber { get; set; } = null!;
 
@@ -35,10 +40,14 @@ public partial class Courier
     [InverseProperty("Couriers")]
     public virtual Branch? CurrentBranch { get; set; }
 
+    [ForeignKey("VehicleId")]
+    [InverseProperty("Couriers")]
+    public virtual Vehicle? Vehicle { get; set; }
+
     [ForeignKey("UserId")]
     [InverseProperty("Courier")]
     public virtual User User { get; set; } = null!;
 
-    [InverseProperty("Courier")]
+    [InverseProperty("AssignedCourier")]
     public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
 }

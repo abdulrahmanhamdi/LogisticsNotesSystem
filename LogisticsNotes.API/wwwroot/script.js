@@ -1,4 +1,5 @@
 ﻿const API_URL = "/api";
+
 let CURRENT_USER = null;
 let ALL_SHIPMENTS = [];
 
@@ -327,6 +328,34 @@ async function loadShipmentLookups() {
 
 // ================= 4. NOTES LOGIC =================
 
+async function loadNoteLookups() {
+    try {
+        const resCat = await fetch(`${API_URL}/Categories`);
+        if (resCat.ok) {
+            const categories = await resCat.json();
+            const catSelect = document.getElementById("nCategory");
+            catSelect.innerHTML = '<option value="">-- No Category --</option>';
+            categories.forEach(c => {
+                catSelect.innerHTML += `<option value="${c.categoryId}">${c.categoryName}</option>`;
+            });
+        }
+
+        const resFold = await fetch(`${API_URL}/Folders`);
+        if (resFold.ok) {
+            let folders = await resFold.json();
+            if (CURRENT_USER.roleId !== ROLE_ADMIN) {
+                folders = folders.filter(f => f.userId === CURRENT_USER.userId);
+            }
+
+            const foldSelect = document.getElementById("nFolder");
+            foldSelect.innerHTML = '<option value="">-- No Folder --</option>';
+            folders.forEach(f => {
+                foldSelect.innerHTML += `<option value="${f.folderId}">${f.folderName}</option>`;
+            });
+        }
+    } catch (e) { console.error("Error loading note lookups", e); }
+}
+
 async function getNotes() {
     const res = await fetch(`${API_URL}/Notes`);
     if (res.ok) {
@@ -340,28 +369,43 @@ async function getNotes() {
         }
 
         const totalNotesEl = document.getElementById("stat-total-notes");
-        const myOwnNotesCount = data.filter(n => n.userId === CURRENT_USER.userId).length;
-        if (totalNotesEl) totalNotesEl.innerText = myOwnNotesCount;
+        if (totalNotesEl) totalNotesEl.innerText = displayNotes.length;
 
         const list = document.getElementById("notesList");
         if (list) {
             list.innerHTML = "";
             displayNotes.forEach(n => {
                 const ownerTag = (CURRENT_USER.roleId === ROLE_ADMIN && n.userId !== CURRENT_USER.userId)
-                    ? `<small class="text-primary">(User #${n.userId})</small>` : "";
+                    ? `<small class="text-primary d-block mb-1">(User #${n.userId})</small>` : "";
+
+                const categoryBadge = n.category
+                    ? `<span class="badge bg-info text-dark me-1"><i class="fas fa-tag"></i> ${n.category.categoryName}</span>`
+                    : "";
+
+                const folderBadge = n.folder
+                    ? `<span class="badge bg-warning text-dark"><i class="fas fa-folder"></i> ${n.folder.folderName}</span>`
+                    : "";
 
                 list.innerHTML += `
                     <div class="col-md-4 mb-3">
-                        <div class="card card-custom h-100 border-left-success">
+                        <div class="card card-custom h-100 border-left-success shadow-sm">
                             <div class="card-body">
-                                <div class="d-flex justify-content-between">
-                                    <h5 class="card-title text-success">${n.title} ${ownerTag}</h5>
-                                    <div>
-                                        <button class="btn btn-sm text-primary" onclick="editNote(${n.noteId})"><i class="fas fa-edit"></i></button>
-                                        <button class="btn btn-sm text-danger" onclick="deleteNote(${n.noteId})"><i class="fas fa-trash"></i></button>
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h5 class="card-title text-success fw-bold mb-0">${n.title}</h5>
+                                    <div class="dropdown">
+                                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>
+                                        <ul class="dropdown-menu">
+                                            <li><a class="dropdown-item" href="#" onclick="editNote(${n.noteId})">Edit</a></li>
+                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(${n.noteId})">Delete</a></li>
+                                        </ul>
                                     </div>
                                 </div>
-                                <p class="card-text text-muted">${n.content}</p>
+                                ${ownerTag}
+                                <div class="mb-2">
+                                    ${categoryBadge} ${folderBadge}
+                                </div>
+                                <p class="card-text text-muted" style="white-space: pre-wrap;">${n.content}</p>
+                                <small class="text-muted" style="font-size: 0.8rem;">Updated: ${new Date(n.createdAt).toLocaleDateString()}</small>
                             </div>
                         </div>
                     </div>`;
@@ -369,47 +413,66 @@ async function getNotes() {
         }
     }
 }
+
 function openNoteModal() {
     document.getElementById("noteForm").reset();
     document.getElementById("nId").value = "";
     document.getElementById("noteModalTitle").innerText = "New Note";
+    loadNoteLookups(); 
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
+
 async function editNote(id) {
     const res = await fetch(`${API_URL}/Notes/${id}`);
     const n = await res.json();
+
+    await loadNoteLookups();
+
     document.getElementById("nId").value = n.noteId;
     document.getElementById("nTitle").value = n.title;
     document.getElementById("nContent").value = n.content;
+
+    if (document.getElementById("nCategory")) document.getElementById("nCategory").value = n.categoryId || "";
+    if (document.getElementById("nFolder")) document.getElementById("nFolder").value = n.folderId || "";
+
     document.getElementById("noteModalTitle").innerText = "Edit Note";
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
+
 const noteForm = document.getElementById("noteForm");
 if (noteForm) {
     noteForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const id = document.getElementById("nId").value;
         const isEdit = id ? true : false;
+
+        const catVal = document.getElementById("nCategory").value;
+        const foldVal = document.getElementById("nFolder").value;
+
         const payload = {
             noteId: isEdit ? parseInt(id) : 0,
             userId: CURRENT_USER.userId,
             title: document.getElementById("nTitle").value,
-            content: document.getElementById("nContent").value
+            content: document.getElementById("nContent").value,
+            categoryId: catVal ? parseInt(catVal) : null, // إرسال null إذا لم يتم الاختيار
+            folderId: foldVal ? parseInt(foldVal) : null
         };
+
         const method = isEdit ? "PUT" : "POST";
         const url = isEdit ? `${API_URL}/Notes/${id}` : `${API_URL}/Notes`;
+
         await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
         bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
         getNotes();
     });
 }
+
 async function deleteNote(id) {
     if (confirm("Delete Note?")) {
         await fetch(`${API_URL}/Notes/${id}`, { method: "DELETE" });
         getNotes();
     }
 }
-
 // ================= 5. USERS LOGIC (CRUD) =================
 
 let isEditingUser = false;

@@ -1,20 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
-namespace LogisticsNotes.API.Models;
-
-public partial class Category
+namespace LogisticsNotes.API.Models
 {
-    [Key]
-    [Column("CategoryID")]
-    public int CategoryId { get; set; }
+    public class Category
+    {
+        [Key]
+        public int CategoryId { get; set; }
 
-    [StringLength(50)]
-    public string CategoryName { get; set; } = null!;
+        [Required]
+        [StringLength(50)]
+        public string CategoryName { get; set; }
 
-    [InverseProperty("Category")]
-    public virtual ICollection<Note> Notes { get; set; } = new List<Note>();
+        [InverseProperty("Category")]
+        public virtual ICollection<Note> Notes { get; set; } = new List<Note>();
+    }
 }

@@ -37,34 +37,38 @@ public partial class LogisticsDbContext : DbContext
     {
         modelBuilder.Entity<Attachment>(entity =>
         {
-            entity.HasKey(e => e.AttachmentId).HasName("PK__Attachme__442C64DE2195BA66");
+            entity.HasKey(e => e.AttachmentId);
             entity.Property(e => e.UploadedAt).HasDefaultValueSql("(getdate())");
             entity.HasOne(d => d.Note).WithMany(p => p.Attachments).HasConstraintName("FK_Attachments_Notes");
         });
 
         modelBuilder.Entity<Branch>(entity =>
         {
-            entity.HasKey(e => e.BranchId).HasName("PK__Branches__A1682FA5FF9BBF90");
+            entity.HasKey(e => e.BranchId);
         });
 
         modelBuilder.Entity<Category>(entity =>
         {
-            entity.HasKey(e => e.CategoryId).HasName("PK__Categori__19093A2B81D251DB");
+            entity.HasKey(e => e.CategoryId);
         });
 
         modelBuilder.Entity<Courier>(entity =>
         {
-            entity.HasKey(e => e.CourierId).HasName("PK__Couriers__CDAE76F655620BAA");
+            entity.HasKey(e => e.CourierId);
             entity.Property(e => e.IsActive).HasDefaultValue(true);
+
             entity.HasOne(d => d.CurrentBranch).WithMany(p => p.Couriers).HasConstraintName("FK_Couriers_Branches");
+
             entity.HasOne(d => d.User).WithOne(p => p.Courier)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Couriers_Users");
+
+            entity.HasOne(d => d.Vehicle).WithMany(p => p.Couriers).HasConstraintName("FK_Couriers_Vehicles");
         });
 
         modelBuilder.Entity<DeliveryHistory>(entity =>
         {
-            entity.HasKey(e => e.HistoryId).HasName("PK__Delivery__4D7B4ADD4A2B98BD");
+            entity.HasKey(e => e.HistoryId);
             entity.Property(e => e.ChangedAt).HasDefaultValueSql("(getdate())");
             entity.HasOne(d => d.Shipment).WithMany(p => p.DeliveryHistories).HasConstraintName("FK_History_Shipments");
             entity.HasOne(d => d.Status).WithMany(p => p.DeliveryHistories)
@@ -74,8 +78,7 @@ public partial class LogisticsDbContext : DbContext
 
         modelBuilder.Entity<Folder>(entity =>
         {
-            entity.HasKey(e => e.FolderId).HasName("PK__Folders__ACD7109FC34BF54F");
-            entity.Property(e => e.IsArchived).HasDefaultValue(false);
+            entity.HasKey(e => e.FolderId);
             entity.HasOne(d => d.User).WithMany(p => p.Folders)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Folders_Users");
@@ -83,7 +86,7 @@ public partial class LogisticsDbContext : DbContext
 
         modelBuilder.Entity<Note>(entity =>
         {
-            entity.HasKey(e => e.NoteId).HasName("PK__Notes__EACE357F30076034");
+            entity.HasKey(e => e.NoteId);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.HasOne(d => d.Category).WithMany(p => p.Notes).HasConstraintName("FK_Notes_Categories");
             entity.HasOne(d => d.Folder).WithMany(p => p.Notes).HasConstraintName("FK_Notes_Folders");
@@ -91,27 +94,22 @@ public partial class LogisticsDbContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Notes_Users");
 
-            entity.HasMany(d => d.Tags).WithMany(p => p.Notes)
-                .UsingEntity<Dictionary<string, object>>(
-                    "NoteTag",
-                    r => r.HasOne<Tag>().WithMany()
-                        .HasForeignKey("TagId")
-                        .HasConstraintName("FK_NoteTags_Tags"),
-                    l => l.HasOne<Note>().WithMany()
-                        .HasForeignKey("NoteId")
-                        .HasConstraintName("FK_NoteTags_Notes"),
-                    j =>
-                    {
-                        j.HasKey("NoteId", "TagId").HasName("PK__NoteTags__3C99FADBE59CCFFA");
-                        j.ToTable("NoteTags");
-                        j.IndexerProperty<int>("NoteId").HasColumnName("NoteID");
-                        j.IndexerProperty<int>("TagId").HasColumnName("TagID");
-                    });
+            entity.HasMany(d => d.Tags)
+                  .WithMany(p => p.Notes)
+                  .UsingEntity<Dictionary<string, object>>(
+                      "NoteTag",
+                      r => r.HasOne<Tag>().WithMany().HasForeignKey("TagId").HasConstraintName("FK_NoteTags_Tags"),
+                      l => l.HasOne<Note>().WithMany().HasForeignKey("NoteId").HasConstraintName("FK_NoteTags_Notes"),
+                      j =>
+                      {
+                          j.HasKey("NoteId", "TagId");
+                          j.ToTable("NoteTags");
+                      });
         });
 
         modelBuilder.Entity<Payment>(entity =>
         {
-            entity.HasKey(e => e.PaymentId).HasName("PK__Payments__9B556A58F084C8F7");
+            entity.HasKey(e => e.PaymentId);
             entity.Property(e => e.IsSuccessful).HasDefaultValue(true);
             entity.Property(e => e.PaymentDate).HasDefaultValueSql("(getdate())");
             entity.HasOne(d => d.Method).WithMany(p => p.Payments)
@@ -124,28 +122,26 @@ public partial class LogisticsDbContext : DbContext
 
         modelBuilder.Entity<PaymentMethod>(entity =>
         {
-            entity.HasKey(e => e.MethodId).HasName("PK__PaymentM__FC681FB17BA1FB95");
+            entity.HasKey(e => e.MethodId);
         });
 
         modelBuilder.Entity<Role>(entity =>
         {
-            entity.HasKey(e => e.RoleId).HasName("PK__Roles__8AFACE3A71A8BAAF");
+            entity.HasKey(e => e.RoleId);
         });
 
         modelBuilder.Entity<ServiceType>(entity =>
         {
-            entity.HasKey(e => e.ServiceTypeId).HasName("PK__ServiceT__8ADFAA0CB36C31DA");
+            entity.HasKey(e => e.ServiceTypeId);
         });
 
         modelBuilder.Entity<SharedNote>(entity =>
         {
-            entity.HasKey(e => e.ShareId).HasName("PK__SharedNo__D32A3F8ECEF9DCF5");
+            entity.HasKey(e => e.ShareId);
             entity.Property(e => e.PermissionLevel).HasDefaultValue("View");
-
             entity.HasOne(d => d.Note).WithMany(p => p.SharedNotes)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_SharedNotes_Notes");
-
             entity.HasOne(d => d.SharedWithUser).WithMany(p => p.SharedNotes)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_SharedNotes_Users");
@@ -153,7 +149,7 @@ public partial class LogisticsDbContext : DbContext
 
         modelBuilder.Entity<Shipment>(entity =>
         {
-            entity.HasKey(e => e.ShipmentId).HasName("PK__Shipment__5CAD378DE24EF432");
+            entity.HasKey(e => e.ShipmentId);
             entity.Property(e => e.SendingDate).HasDefaultValueSql("(getdate())");
 
             entity.HasOne(d => d.CurrentStatus).WithMany(p => p.Shipments)
@@ -175,21 +171,25 @@ public partial class LogisticsDbContext : DbContext
             entity.HasOne(d => d.ServiceType).WithMany(p => p.Shipments)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_Shipments_ServiceTypes");
+
+            entity.HasOne(d => d.AssignedCourier).WithMany(p => p.Shipments)
+                .HasForeignKey(d => d.AssignedCourierId)
+                .HasConstraintName("FK_Shipments_Courier");
         });
 
         modelBuilder.Entity<ShipmentStatus>(entity =>
         {
-            entity.HasKey(e => e.StatusId).HasName("PK__Shipment__C8EE2043DD203DD4");
+            entity.HasKey(e => e.StatusId);
         });
 
         modelBuilder.Entity<Tag>(entity =>
         {
-            entity.HasKey(e => e.TagId).HasName("PK__Tags__657CFA4CD1CB764B");
+            entity.HasKey(e => e.TagId);
         });
 
         modelBuilder.Entity<User>(entity =>
         {
-            entity.HasKey(e => e.UserId).HasName("PK__Users__1788CCAC35399D23");
+            entity.HasKey(e => e.UserId);
             entity.Property(e => e.CreatedAt).HasDefaultValueSql("(getdate())");
             entity.HasOne(d => d.Role).WithMany(p => p.Users)
                 .OnDelete(DeleteBehavior.ClientSetNull)
@@ -198,7 +198,7 @@ public partial class LogisticsDbContext : DbContext
 
         modelBuilder.Entity<Vehicle>(entity =>
         {
-            entity.HasKey(e => e.VehicleId).HasName("PK__Vehicles__476B54B2844F34A2");
+            entity.HasKey(e => e.VehicleId);
             entity.Property(e => e.Status).HasDefaultValue("Available");
         });
 

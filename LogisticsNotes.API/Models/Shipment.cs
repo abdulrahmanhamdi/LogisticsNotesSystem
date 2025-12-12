@@ -32,7 +32,7 @@ public partial class Shipment
     [StringLength(255)]
     public string? Description { get; set; }
 
-    [Column(TypeName = "datetime2")] 
+    [Column(TypeName = "datetime2")]
     public DateTime? SendingDate { get; set; }
 
     [Column(TypeName = "datetime2")]
@@ -44,7 +44,7 @@ public partial class Shipment
     [Column("AssignedCourierID")]
     public int? AssignedCourierId { get; set; }
 
-
+    public double ShippingCost { get; set; }
 
     [ForeignKey("CurrentStatusId")]
     [InverseProperty("Shipments")]
@@ -74,6 +74,5 @@ public partial class Shipment
 
     [ForeignKey("AssignedCourierId")]
     [InverseProperty("Shipments")]
-    public virtual Courier? Courier { get; set; }
-    public double ShippingCost { get; set; }
+    public virtual Courier? AssignedCourier { get; set; }
 }

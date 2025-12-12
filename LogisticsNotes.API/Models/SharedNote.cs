@@ -1,31 +1,24 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
-namespace LogisticsNotes.API.Models;
-
-public partial class SharedNote
+namespace LogisticsNotes.API.Models
 {
-    [Key]
-    [Column("ShareID")]
-    public int ShareId { get; set; }
+    public class SharedNote
+    {
+        [Key]
+        public int ShareId { get; set; }
 
-    [Column("NoteID")]
-    public int NoteId { get; set; }
+        public int NoteId { get; set; }
 
-    [Column("SharedWithUserID")]
-    public int SharedWithUserId { get; set; }
+        public int SharedWithUserId { get; set; } 
 
-    [StringLength(20)]
-    public string? PermissionLevel { get; set; }
+        [StringLength(20)]
+        public string PermissionLevel { get; set; } = "View"; 
 
-    [ForeignKey("NoteId")]
-    [InverseProperty("SharedNotes")]
-    public virtual Note Note { get; set; } = null!;
+        [ForeignKey("NoteId")]
+        public virtual Note? Note { get; set; }
 
-    [ForeignKey("SharedWithUserId")]
-    [InverseProperty("SharedNotes")]
-    public virtual User SharedWithUser { get; set; } = null!;
+        [ForeignKey("SharedWithUserId")]
+        public virtual User? SharedWithUser { get; set; }
+    }
 }

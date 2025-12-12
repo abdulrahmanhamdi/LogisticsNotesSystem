@@ -1,29 +1,24 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
-namespace LogisticsNotes.API.Models;
-
-public partial class Attachment
+namespace LogisticsNotes.API.Models
 {
-    [Key]
-    [Column("AttachmentID")]
-    public int AttachmentId { get; set; }
+    public class Attachment
+    {
+        [Key]
+        public int AttachmentId { get; set; }
 
-    [Column("NoteID")]
-    public int NoteId { get; set; }
+        public int NoteId { get; set; }
 
-    [StringLength(255)]
-    public string FileName { get; set; } = null!;
+        [StringLength(255)]
+        public string FileName { get; set; }
 
-    public string FilePath { get; set; } = null!;
+        public string FilePath { get; set; }
 
-    [Column(TypeName = "datetime")]
-    public DateTime? UploadedAt { get; set; }
+        public DateTime UploadedAt { get; set; } = DateTime.Now;
 
-    [ForeignKey("NoteId")]
-    [InverseProperty("Attachments")]
-    public virtual Note Note { get; set; } = null!;
+        [ForeignKey("NoteId")]
+        public virtual Note? Note { get; set; }
+    }
 }

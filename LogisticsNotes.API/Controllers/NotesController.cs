@@ -24,14 +24,20 @@ namespace LogisticsNotes.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Note>>> GetNotes()
         {
-            return await _context.Notes.ToListAsync();
+            return await _context.Notes
+                .Include(n => n.Category) 
+                .Include(n => n.Folder)   
+                .ToListAsync();
         }
 
         // GET: api/Notes/5
         [HttpGet("{id}")]
         public async Task<ActionResult<Note>> GetNote(int id)
         {
-            var note = await _context.Notes.FindAsync(id);
+            var note = await _context.Notes
+                .Include(n => n.Category)
+                .Include(n => n.Folder)
+                .FirstOrDefaultAsync(n => n.NoteId == id);
 
             if (note == null)
             {
