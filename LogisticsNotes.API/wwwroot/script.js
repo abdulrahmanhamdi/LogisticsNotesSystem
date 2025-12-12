@@ -635,9 +635,13 @@ if (shareForm) {
         }
     });
 }
-// ================= 5. USERS LOGIC (CRUD + Manual ID) =================
+
+// ================= 5. USERS LOGIC (CRUD + Courier Profile) =================
 
 let isEditingUser = false;
+// Assuming ROLE_COURIER is defined elsewhere (e.g., const ROLE_COURIER = 3;)
+// If not defined, you must define it at the top of the file:
+// const ROLE_COURIER = 3;
 
 async function getUsers() {
     const res = await fetch(`${API_URL}/Users`);
@@ -647,14 +651,21 @@ async function getUsers() {
         if (tbody) {
             tbody.innerHTML = "";
             data.forEach(u => {
+                // Check if the user is a Courier (Role ID 3 assumed)
+                const isCourier = u.roleId === ROLE_COURIER;
+                const courierBtn = isCourier
+                    ? `<button class="btn btn-sm btn-outline-dark ms-1" onclick="openCourierModal(${u.userId})" title="Manage Courier Profile"><i class="fas fa-truck"></i></button>`
+                    : "";
+
                 tbody.innerHTML += `
                     <tr>
                         <td>${u.userId}</td>
                         <td>${u.firstName} ${u.lastName}</td>
                         <td>${u.email}</td>
-                        <td>${u.role?.roleName || '-'}</td>
+                        <td><span class="badge bg-secondary">${u.role?.roleName || '-'}</span></td>
                         <td>
                             <button class="btn btn-sm btn-outline-primary" onclick="editUser(${u.userId})" title="Edit"><i class="fas fa-edit"></i></button>
+                            ${courierBtn}
                             <button class="btn btn-sm btn-outline-danger" onclick="deleteUser(${u.userId})" title="Delete"><i class="fas fa-trash"></i></button>
                         </td>
                     </tr>`;
@@ -666,7 +677,7 @@ async function getUsers() {
 function openUserModal() {
     isEditingUser = false;
     document.getElementById("userForm").reset();
-    document.getElementById("uId").disabled = false; 
+    document.getElementById("uId").disabled = false;
     document.getElementById("userModalTitle").innerText = "New User";
 
     getRoles();
@@ -687,10 +698,11 @@ async function editUser(id) {
         document.getElementById("uRole").value = u.roleId;
         document.getElementById("uPass").value = "";
 
-        document.getElementById("uId").disabled = true; 
+        document.getElementById("uId").disabled = true;
         document.getElementById("userModalTitle").innerText = "Edit User";
 
         await getRoles();
+        document.getElementById("uRole").value = u.roleId; // Re-apply role ID after filling options
         new bootstrap.Modal(document.getElementById('userModal')).show();
     }
 }
@@ -707,6 +719,7 @@ if (userForm) {
             firstName: document.getElementById("uFname").value,
             lastName: document.getElementById("uLname").value,
             email: document.getElementById("uEmail").value,
+            // Simple logic for password hash for CRUD demo. In real apps, hash is handled server-side.
             passwordHash: document.getElementById("uPass").value ? document.getElementById("uPass").value : (isEditingUser ? "123456" : "123456"),
             roleId: parseInt(document.getElementById("uRole").value),
             phone: document.getElementById("uPhone").value || "0000000000"
@@ -747,6 +760,83 @@ async function getRoles() {
     }
 }
 
+// --- Courier Profile Logic ---
+
+async function openCourierModal(userId) {
+    document.getElementById("courierForm").reset();
+    document.getElementById("cUserId").value = userId;
+
+    // 1. Fetch Vehicles to populate the dropdown list
+    const resVeh = await fetch(`${API_URL}/Vehicles`);
+    if (resVeh.ok) {
+        const vehicles = await resVeh.json();
+        const sel = document.getElementById("cVehicle");
+        sel.innerHTML = '<option value="">-- No Vehicle --</option>';
+        vehicles.forEach(v => {
+            // Display available cars or those already assigned to the courier
+            sel.innerHTML += `<option value="${v.vehicleId}">${v.model} (${v.licensePlate}) - ${v.status}</option>`;
+        });
+    }
+
+    // 2. Attempt to fetch current Courier profile data (if exists)
+    const resProf = await fetch(`${API_URL}/Couriers/ByUserId/${userId}`);
+    if (resProf.status !== 204) { // 204 means No Content (New Courier)
+        const profile = await resProf.json();
+        document.getElementById("cId").value = profile.courierId || "";
+        document.getElementById("cLicense").value = profile.licenseNumber || "";
+        // Set vehicle value after options are populated
+        document.getElementById("cVehicle").value = profile.vehicleId || "";
+        document.getElementById("cShiftStart").value = profile.shiftStart ? profile.shiftStart.substring(0, 5) : ""; // Format time
+        document.getElementById("cShiftEnd").value = profile.shiftEnd ? profile.shiftEnd.substring(0, 5) : ""; // Format time
+    } else {
+        document.getElementById("cId").value = ""; // New profile
+    }
+
+    new bootstrap.Modal(document.getElementById('courierModal')).show();
+}
+
+const courierForm = document.getElementById("courierForm");
+if (courierForm) {
+    courierForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const uId = document.getElementById("cUserId").value;
+        const cId = document.getElementById("cId").value;
+        const lic = document.getElementById("cLicense").value;
+        const vId = document.getElementById("cVehicle").value;
+        const sStart = document.getElementById("cShiftStart").value;
+        const sEnd = document.getElementById("cShiftEnd").value;
+
+        const payload = {
+            userId: parseInt(uId),
+            courierId: cId ? parseInt(cId) : 0,
+            licenseNumber: lic,
+            vehicleId: vId ? parseInt(vId) : null,
+            shiftStart: sStart ? sStart + ":00" : null,
+            shiftEnd: sEnd ? sEnd + ":00" : null
+        };
+
+        try {
+            const res = await fetch(`${API_URL}/Couriers`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                alert("Courier Profile Saved Successfully! ✅");
+                bootstrap.Modal.getInstance(document.getElementById('courierModal')).hide();
+            } else {
+                const errorData = await res.json();
+                alert("Error: " + (errorData.message || JSON.stringify(errorData)));
+                console.error("Server Error:", errorData);
+            }
+        } catch (err) {
+            alert("Network Error: Check console.");
+            console.error(err);
+        }
+    });
+}
 // ================= 6. BRANCHES =================
 
 async function getBranchesTable() {

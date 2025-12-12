@@ -1,8 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LogisticsNotes.API.Models;
@@ -24,84 +22,71 @@ namespace LogisticsNotes.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Courier>>> GetCouriers()
         {
-            return await _context.Couriers.Include(c => c.User).ToListAsync();
+            return await _context.Couriers
+                .Include(c => c.User)
+                .Include(c => c.Vehicle) 
+                .Include(c => c.CurrentBranch)
+                .ToListAsync();
         }
 
-        // GET: api/Couriers/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Courier>> GetCourier(int id)
+        // GET: api/Couriers/ByUserId/5 
+        [HttpGet("ByUserId/{userId}")]
+        public async Task<ActionResult<Courier>> GetCourierByUserId(int userId)
         {
-            var courier = await _context.Couriers.FindAsync(id);
+            var courier = await _context.Couriers
+                .Include(c => c.Vehicle)
+                .FirstOrDefaultAsync(c => c.UserId == userId);
 
-            if (courier == null)
-            {
-                return NotFound();
-            }
+            if (courier == null) return NoContent();
 
             return courier;
         }
 
-        // PUT: api/Couriers/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutCourier(int id, Courier courier)
+        // POST: api/Couriers
+        [HttpPost]
+        public async Task<ActionResult<Courier>> UpsertCourier(Courier courier)
         {
-            if (id != courier.CourierId)
-            {
-                return BadRequest();
-            }
+            var existingCourier = await _context.Couriers
+                .FirstOrDefaultAsync(c => c.UserId == courier.UserId);
 
-            _context.Entry(courier).State = EntityState.Modified;
+            if (existingCourier != null)
+            {
+                existingCourier.LicenseNumber = courier.LicenseNumber;
+                existingCourier.VehicleId = courier.VehicleId;
+                existingCourier.ShiftStart = courier.ShiftStart;
+                existingCourier.ShiftEnd = courier.ShiftEnd;
+                existingCourier.CurrentBranchId = courier.CurrentBranchId;
+
+                _context.Entry(existingCourier).State = EntityState.Modified;
+            }
+            else
+            {
+                courier.IsActive = true;
+
+                _context.Couriers.Add(courier);
+            }
 
             try
             {
                 await _context.SaveChangesAsync();
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateException ex)
             {
-                if (!CourierExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+                return BadRequest(new { message = ex.InnerException?.Message ?? ex.Message });
             }
 
-            return NoContent();
+            return Ok(courier);
         }
-
-        // POST: api/Couriers
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPost]
-        public async Task<ActionResult<Courier>> PostCourier(Courier courier)
-        {
-            _context.Couriers.Add(courier);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction("GetCourier", new { id = courier.CourierId }, courier);
-        }
-
         // DELETE: api/Couriers/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCourier(int id)
         {
             var courier = await _context.Couriers.FindAsync(id);
-            if (courier == null)
-            {
-                return NotFound();
-            }
+            if (courier == null) return NotFound();
 
             _context.Couriers.Remove(courier);
             await _context.SaveChangesAsync();
-
             return NoContent();
-        }
-
-        private bool CourierExists(int id)
-        {
-            return _context.Couriers.Any(e => e.CourierId == id);
         }
     }
 }

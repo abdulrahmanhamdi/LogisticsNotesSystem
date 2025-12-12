@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json.Serialization;
 
 namespace LogisticsNotes.API.Models;
 
@@ -34,17 +35,20 @@ public partial class Courier
 
     public bool? IsActive { get; set; }
 
+
+
     [ForeignKey("CurrentBranchId")]
     [InverseProperty("Couriers")]
-    public virtual Branch? CurrentBranch { get; set; }
+    public virtual Branch? CurrentBranch { get; set; } 
 
     [ForeignKey("VehicleId")]
     [InverseProperty("Couriers")]
-    public virtual Vehicle? Vehicle { get; set; }
+    public virtual Vehicle? Vehicle { get; set; } 
 
     [ForeignKey("UserId")]
     [InverseProperty("Courier")]
-    public virtual User User { get; set; } = null!;
+    [JsonIgnore]
+    public virtual User? User { get; set; }
 
     [InverseProperty("AssignedCourier")]
     public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
