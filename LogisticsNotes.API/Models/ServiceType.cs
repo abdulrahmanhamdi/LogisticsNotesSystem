@@ -2,24 +2,26 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
-namespace LogisticsNotes.API.Models;
-
-public partial class ServiceType
+namespace LogisticsNotes.API.Models
 {
-    [Key]
-    [Column("ServiceTypeID")]
-    public int ServiceTypeId { get; set; }
+    public class ServiceType
+    {
+        [Key]
+        public int ServiceTypeId { get; set; }
 
-    [StringLength(50)]
-    public string TypeName { get; set; } = null!;
+        [Required]
+        [StringLength(50)]
+        public string TypeName { get; set; }
 
 
-    public double BasePrice { get; set; }
+        public double PricePerKg { get; set; }
 
-    public double? SpeedFactor { get; set; }
+        public double BasePrice { get; set; }
 
-    [InverseProperty("ServiceType")]
-    public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
+        public double SpeedFactor { get; set; }
+
+        [InverseProperty("ServiceType")]
+        public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
+    }
 }

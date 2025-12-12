@@ -46,6 +46,9 @@
             <a id="nav-branches" class="nav-item" onclick="showSection('branches')">
                 <i class="fas fa-building"></i> Branches Management
             </a>
+            <a id="nav-vehicles" class="nav-item" onclick="showSection('vehicles')">
+                <i class="fas fa-truck-moving"></i> Fleet & Vehicles
+            </a>
             <div class="mt-auto mb-4">
                 <a class="nav-item" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
@@ -68,6 +71,7 @@
             </div>
 
             <div class="main-content">
+
                 <div id="section-logistics">
                     <div class="row mb-4">
                         <div class="col-xl-4 col-md-6 mb-4" onclick="showSection('logistics')" style="cursor: pointer;">
@@ -78,14 +82,11 @@
                                             <div class="text-xs fw-bold text-primary text-uppercase mb-1">Total Shipments</div>
                                             <div class="h5 mb-0 fw-bold text-gray-800" id="stat-total-shipments">0</div>
                                         </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-box fa-2x text-gray-300"></i>
-                                        </div>
+                                        <div class="col-auto"><i class="fas fa-box fa-2x text-gray-300"></i></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-xl-4 col-md-6 mb-4" onclick="showSection('logistics')" style="cursor: pointer;">
                             <div class="card card-custom border-left-warning h-100 py-2">
                                 <div class="card-body">
@@ -94,14 +95,11 @@
                                             <div class="text-xs fw-bold text-warning text-uppercase mb-1">Pending Shipments</div>
                                             <div class="h5 mb-0 fw-bold text-gray-800" id="stat-pending-shipments">0</div>
                                         </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-clock fa-2x text-gray-300"></i>
-                                        </div>
+                                        <div class="col-auto"><i class="fas fa-clock fa-2x text-gray-300"></i></div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-xl-4 col-md-6 mb-4" onclick="showSection('notes')" style="cursor: pointer;">
                             <div class="card card-custom border-left-success h-100 py-2">
                                 <div class="card-body">
@@ -110,9 +108,7 @@
                                             <div class="text-xs fw-bold text-success text-uppercase mb-1">My Notes</div>
                                             <div class="h5 mb-0 fw-bold text-gray-800" id="stat-total-notes">0</div>
                                         </div>
-                                        <div class="col-auto">
-                                            <i class="fas fa-sticky-note fa-2x text-gray-300"></i>
-                                        </div>
+                                        <div class="col-auto"><i class="fas fa-sticky-note fa-2x text-gray-300"></i></div>
                                     </div>
                                 </div>
                             </div>
@@ -136,6 +132,7 @@
                                         <th>ID</th>
                                         <th>Description</th>
                                         <th>Weight</th>
+                                        <th>Cost</th>
                                         <th>Status</th>
                                         <th>Ship Date</th>
                                         <th id="actionsHeader">Actions</th>
@@ -145,9 +142,7 @@
                             </table>
                         </div>
                     </div>
-                </div>
-
-                <div id="section-notes" class="hidden">
+                </div> <div id="section-notes" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">My Personal Notes</h4>
                         <button class="btn btn-success shadow" onclick="openNoteModal()">
@@ -155,9 +150,7 @@
                         </button>
                     </div>
                     <div class="row" id="notesList"></div>
-                </div>
-
-                <div id="section-users" class="hidden">
+                </div> <div id="section-users" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
                         <h4 class="text-gray-800">Users List</h4>
                         <button class="btn btn-info text-white shadow" onclick="openUserModal()">
@@ -180,11 +173,9 @@
                             </table>
                         </div>
                     </div>
-                </div>
-
-                <div id="section-branches" class="hidden">
+                </div> <div id="section-branches" class="hidden">
                     <div class="d-flex justify-content-between mb-4">
-                        <h4 class="text-gray-800">Branches and Cities Management</h4>
+                        <h4 class="text-gray-800">Branches Management</h4>
                         <button class="btn btn-warning text-dark shadow" onclick="openBranchModal()">
                             <i class="fas fa-plus"></i> Add New Branch
                         </button>
@@ -196,6 +187,30 @@
                                     <tr><th>ID</th><th>Branch Name</th><th>City</th><th>Address</th><th>Phone</th><th>Delete</th></tr>
                                 </thead>
                                 <tbody id="branchesTable"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div> <div id="section-vehicles" class="hidden">
+                    <div class="d-flex justify-content-between mb-4">
+                        <h4 class="text-gray-800">Fleet Management</h4>
+                        <button class="btn btn-dark shadow" onclick="openVehicleModal()">
+                            <i class="fas fa-plus"></i> Add Vehicle
+                        </button>
+                    </div>
+                    <div class="card card-custom">
+                        <div class="card-body">
+                            <table class="table table-hover table-sm align-middle mb-0">
+                                <thead class="table-secondary">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>License Plate</th>
+                                        <th>Model</th>
+                                        <th>Capacity (KG)</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="vehiclesTable"></tbody>
                             </table>
                         </div>
                     </div>
@@ -214,23 +229,20 @@
                 <div class="modal-body">
                     <form id="shipmentForm">
                         <input type="hidden" id="sId">
-
                         <div class="mb-3">
-                            <label>Shipment Description</label>
-                            <input type="text" class="form-control" id="sDesc" required placeholder="e.g., Official Documents">
+                            <label>Description</label>
+                            <input type="text" class="form-control" id="sDesc" required>
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label>Origin Branch (From)</label>
+                                <label>Origin</label>
                                 <select class="form-select" id="sOrigin" required></select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label>Destination Branch (To)</label>
+                                <label>Destination</label>
                                 <select class="form-select" id="sDest" required></select>
                             </div>
                         </div>
-
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label>Service Type</label>
@@ -241,12 +253,9 @@
                                 <input type="number" class="form-control" id="sWeight" value="1" step="0.1" min="0.1" required>
                             </div>
                         </div>
-
                         <div class="mb-3">
                             <label class="fw-bold text-primary">Assign Courier</label>
-                            <select class="form-select" id="sCourier">
-                                <option value="">-- Unassigned --</option>
-                            </select>
+                            <select class="form-select" id="sCourier"><option value="">-- Unassigned --</option></select>
                         </div>
                         <button type="submit" class="btn btn-primary w-100">Save Shipment</button>
                     </form>
@@ -265,14 +274,8 @@
                 <div class="modal-body">
                     <form id="noteForm">
                         <input type="hidden" id="nId">
-                        <div class="mb-3">
-                            <label>Title</label>
-                            <input type="text" class="form-control" id="nTitle" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>Content</label>
-                            <textarea class="form-control" id="nContent" rows="4" required></textarea>
-                        </div>
+                        <div class="mb-3"><label>Title</label><input type="text" class="form-control" id="nTitle" required></div>
+                        <div class="mb-3"><label>Content</label><textarea class="form-control" id="nContent" rows="4" required></textarea></div>
                         <button type="submit" class="btn btn-success w-100">Save</button>
                     </form>
                 </div>
@@ -290,24 +293,17 @@
                 <div class="modal-body">
                     <form id="userForm">
                         <div class="mb-2">
-                            <label class="form-label fw-bold">User ID (Manual Input)</label>
-                            <input type="number" class="form-control" id="uId" placeholder="Enter ID manually" required min="1">
+                            <label class="fw-bold">User ID (Manual)</label>
+                            <input type="number" class="form-control" id="uId" required min="1">
                         </div>
-
                         <div class="row">
-                            <div class="col">
-                                <input type="text" class="form-control mb-2" id="uFname" placeholder="First Name" required>
-                            </div>
-                            <div class="col">
-                                <input type="text" class="form-control mb-2" id="uLname" placeholder="Last Name" required>
-                            </div>
+                            <div class="col"><input type="text" class="form-control mb-2" id="uFname" placeholder="First Name" required></div>
+                            <div class="col"><input type="text" class="form-control mb-2" id="uLname" placeholder="Last Name" required></div>
                         </div>
-
                         <input type="email" class="form-control mb-2" id="uEmail" placeholder="Email" required>
-                        <input type="text" class="form-control mb-2" id="uPhone" placeholder="Phone Number">
-                        <input type="password" class="form-control mb-2" id="uPass" placeholder="Password (leave empty to keep)">
+                        <input type="text" class="form-control mb-2" id="uPhone" placeholder="Phone">
+                        <input type="password" class="form-control mb-2" id="uPass" placeholder="Password (leave empty to keep current)">
                         <select class="form-select mb-3" id="uRole"></select>
-
                         <button type="submit" class="btn btn-info text-white w-100">Save</button>
                     </form>
                 </div>
@@ -326,27 +322,45 @@
                     <form id="statusForm">
                         <input type="hidden" id="statusShipmentId">
                         <div class="mb-3">
-                            <label>Select New Status:</label>
+                            <label>New Status:</label>
                             <select class="form-select" id="newStatusSelect"></select>
                         </div>
                         <div class="mb-3">
-                            <label>Notes (Optional):</label>
-                            <textarea class="form-control" id="statusNotes" rows="2" placeholder="e.g., Delivered to the client"></textarea>
+                            <label>Notes:</label>
+                            <textarea class="form-control" id="statusNotes" rows="2"></textarea>
                         </div>
                         <button type="submit" class="btn btn-warning w-100 text-dark">Update Status</button>
                     </form>
-
                     <hr>
                     <h6 class="fw-bold">Tracking History:</h6>
                     <table class="table table-sm table-bordered">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Status</th>
-                                <th>Notes</th>
-                            </tr>
-                        </thead>
+                        <thead><tr><th>Date</th><th>Status</th><th>Notes</th></tr></thead>
                         <tbody id="historyTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title">Shipment Payments</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <input type="hidden" id="payShipmentId">
+                        <div class="mb-3"><label>Amount ($)</label><input type="number" class="form-control" id="payAmount" required min="1" step="0.5"></div>
+                        <div class="mb-3"><label>Method</label><select class="form-select" id="payMethod" required></select></div>
+                        <button type="submit" class="btn btn-success w-100">Confirm Payment</button>
+                    </form>
+                    <hr>
+                    <h6 class="fw-bold text-success">Payment History:</h6>
+                    <table class="table table-sm table-bordered">
+                        <thead><tr><th>Date</th><th>Method</th><th>Amount</th></tr></thead>
+                        <tbody id="paymentHistoryBody"></tbody>
                     </table>
                 </div>
             </div>
@@ -362,23 +376,47 @@
                 </div>
                 <div class="modal-body">
                     <form id="branchForm">
-                        <div class="mb-3">
-                            <label>Branch Name</label>
-                            <input type="text" class="form-control" id="bName" placeholder="e.g., Central Ankara Branch" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>City</label>
-                            <input type="text" class="form-control" id="bCity" placeholder="e.g., Ankara" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>Address</label>
-                            <input type="text" class="form-control" id="bAddress" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>Phone</label>
-                            <input type="text" class="form-control" id="bPhone" required>
-                        </div>
+                        <div class="mb-3"><label>Name</label><input type="text" class="form-control" id="bName" required></div>
+                        <div class="mb-3"><label>City</label><input type="text" class="form-control" id="bCity" required></div>
+                        <div class="mb-3"><label>Address</label><input type="text" class="form-control" id="bAddress" required></div>
+                        <div class="mb-3"><label>Phone</label><input type="text" class="form-control" id="bPhone" required></div>
                         <button type="submit" class="btn btn-warning w-100 text-dark">Save Branch</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="vehicleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-dark text-white">
+                    <h5 class="modal-title">New Vehicle</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="vehicleForm">
+                        <div class="mb-3">
+                            <label>License Plate</label>
+                            <input type="text" class="form-control" id="vPlate" placeholder="e.g., 34 ABC 123" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Model</label>
+                            <input type="text" class="form-control" id="vModel" placeholder="e.g., Ford Transit" required>
+                        </div>
+                        <div class="mb-3">
+                            <label>Capacity (KG)</label>
+                            <input type="number" class="form-control" id="vCapacity" required min="1">
+                        </div>
+                        <div class="mb-3">
+                            <label>Status</label>
+                            <select class="form-select" id="vStatus">
+                                <option value="Available">Available</option>
+                                <option value="Busy">Busy</option>
+                                <option value="Maintenance">Maintenance</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-dark w-100">Save Vehicle</button>
                     </form>
                 </div>
             </div>

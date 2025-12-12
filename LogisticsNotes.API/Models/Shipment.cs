@@ -75,4 +75,5 @@ public partial class Shipment
     [ForeignKey("AssignedCourierId")]
     [InverseProperty("Shipments")]
     public virtual Courier? Courier { get; set; }
+    public double ShippingCost { get; set; }
 }

@@ -20,88 +20,40 @@ namespace LogisticsNotes.API.Controllers
             _context = context;
         }
 
-        // GET: api/Payments
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Payment>>> GetPayments()
+        [HttpGet("Methods")]
+        public async Task<ActionResult<IEnumerable<PaymentMethod>>> GetPaymentMethods()
         {
-            return await _context.Payments.ToListAsync();
+            return await _context.PaymentMethods.ToListAsync();
         }
 
-        // GET: api/Payments/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<Payment>> GetPayment(int id)
+        [HttpGet("ByShipment/{shipmentId}")]
+        public async Task<ActionResult<IEnumerable<object>>> GetPaymentsByShipment(int shipmentId)
         {
-            var payment = await _context.Payments.FindAsync(id);
-
-            if (payment == null)
-            {
-                return NotFound();
-            }
-
-            return payment;
-        }
-
-        // PUT: api/Payments/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutPayment(int id, Payment payment)
-        {
-            if (id != payment.PaymentId)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(payment).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!PaymentExists(id))
+            var payments = await _context.Payments
+                .Where(p => p.ShipmentId == shipmentId)
+                .Include(p => p.Method)
+                .Select(p => new
                 {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
+                    p.PaymentId,
+                    p.Amount,
+                    p.PaymentDate,
+                    MethodName = p.Method.MethodName
+                })
+                .ToListAsync();
 
-            return NoContent();
+            return payments;
         }
 
-        // POST: api/Payments
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Payment>> PostPayment(Payment payment)
         {
+            payment.PaymentDate = DateTime.Now; 
+            payment.IsSuccessful = true;
+
             _context.Payments.Add(payment);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction("GetPayment", new { id = payment.PaymentId }, payment);
-        }
-
-        // DELETE: api/Payments/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeletePayment(int id)
-        {
-            var payment = await _context.Payments.FindAsync(id);
-            if (payment == null)
-            {
-                return NotFound();
-            }
-
-            _context.Payments.Remove(payment);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool PaymentExists(int id)
-        {
-            return _context.Payments.Any(e => e.PaymentId == id);
+            return CreatedAtAction("GetPaymentsByShipment", new { shipmentId = payment.ShipmentId }, payment);
         }
     }
 }
