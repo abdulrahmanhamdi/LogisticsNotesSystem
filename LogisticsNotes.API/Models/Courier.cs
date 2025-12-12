@@ -47,7 +47,6 @@ public partial class Courier
 
     [ForeignKey("UserId")]
     [InverseProperty("Courier")]
-    [JsonIgnore]
     public virtual User? User { get; set; }
 
     [InverseProperty("AssignedCourier")]

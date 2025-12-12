@@ -371,10 +371,20 @@ async function loadShipmentLookups() {
             if (courierSel) {
                 const current = courierSel.value;
                 courierSel.innerHTML = '<option value="">-- Unassigned --</option>';
+
                 couriers.forEach(c => {
-                    const name = c.user ? `${c.user.firstName} ${c.user.lastName}` : `Courier #${c.courierId}`;
-                    courierSel.innerHTML += `<option value="${c.courierId}">${name}</option>`;
+                    let displayName = `Courier #${c.courierId}`;
+                    if (c.user) {
+                        displayName = `${c.user.firstName} ${c.user.lastName}`;
+                    }
+
+                    if (c.vehicle) {
+                        displayName += ` [${c.vehicle.model}]`;
+                    }
+
+                    courierSel.innerHTML += `<option value="${c.courierId}">${displayName}</option>`;
                 });
+
                 if (current) courierSel.value = current;
             }
         }
