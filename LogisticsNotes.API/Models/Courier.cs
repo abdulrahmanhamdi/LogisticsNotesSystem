@@ -19,10 +19,8 @@ public partial class Courier
     [Column("CurrentBranchID")]
     public int? CurrentBranchId { get; set; }
 
-    // --- الإضافة الجديدة ---
     [Column("VehicleID")]
     public int? VehicleId { get; set; }
-    // -----------------------
 
     [StringLength(50)]
     public string LicenseNumber { get; set; } = null!;

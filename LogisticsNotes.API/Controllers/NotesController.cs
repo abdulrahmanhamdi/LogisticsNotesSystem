@@ -39,6 +39,8 @@ namespace LogisticsNotes.API.Controllers
                 .Include(n => n.Category)
                 .Include(n => n.Folder)
                 .Include(n => n.Tags)
+                .Include(n => n.User)
+                .Include(n => n.SharedNotes) 
                 .ToListAsync();
         }
 

@@ -10,16 +10,18 @@ const ROLE_COURIER = 3;
 // ================= 1. LOGIN & AUTHENTICATION =================
 
 document.addEventListener("DOMContentLoaded", () => {
-    const storedUser = localStorage.getItem("LOGI_USER");
-    if (storedUser) {
-        try {
-            CURRENT_USER = JSON.parse(storedUser);
-            showDashboard(); 
-        } catch (e) {
-            console.error("Error parsing stored user", e);
-            localStorage.removeItem("LOGI_USER");
-        }
-    }
+    // Removed automatic retrieval of stored user (localStorage)
+    // The application will now always start at the login screen.
+    // const storedUser = localStorage.getItem("LOGI_USER");
+    // if (storedUser) {
+    //     try {
+    //         CURRENT_USER = JSON.parse(storedUser);
+    //         showDashboard();
+    //     } catch (e) {
+    //         console.error("Error parsing stored user", e);
+    //         localStorage.removeItem("LOGI_USER");
+    //     }
+    // }
 
     const loginForm = document.getElementById("loginForm");
     if (loginForm) {
@@ -42,7 +44,8 @@ document.addEventListener("DOMContentLoaded", () => {
                     const user = await res.json();
                     CURRENT_USER = user;
 
-                    localStorage.setItem("LOGI_USER", JSON.stringify(user));
+                    // Removed saving the user to localStorage:
+                    // localStorage.setItem("LOGI_USER", JSON.stringify(user));
 
                     showDashboard();
                 } else {
@@ -82,11 +85,9 @@ function showDashboard() {
 
 function logout() {
     CURRENT_USER = null;
-    localStorage.removeItem("LOGI_USER"); 
-    window.location.reload(); 
-}
-
-// ================= 2. NAVIGATION & ROLE ACCESS =================
+    localStorage.removeItem("LOGI_USER");
+    window.location.reload();
+}// ================= 2. NAVIGATION & ROLE ACCESS =================
 
 function showSection(sectionId) {
     const allSections = ["logistics", "notes", "users", "branches", "vehicles"];
@@ -412,7 +413,7 @@ async function loadNoteLookups() {
                 container.innerHTML = "";
                 tags.forEach(t => {
                     container.innerHTML += `
-                        <div class="form-check">
+                        <div class="form-check form-check-inline">
                             <input class="form-check-input note-tag-check" type="checkbox" value="${t.tagId}" id="tag-${t.tagId}">
                             <label class="form-check-label" for="tag-${t.tagId}">
                                 ${t.tagName}
@@ -424,51 +425,76 @@ async function loadNoteLookups() {
     } catch (e) { console.error("Error loading note lookups", e); }
 }
 
+// تحديث: جلب الملاحظات (المملوكة والمشاركة)
 async function getNotes() {
     try {
         const res = await fetch(`${API_URL}/Notes`);
         if (res.ok) {
             const data = await res.json();
-            let displayNotes = (CURRENT_USER.roleId === ROLE_ADMIN) ? data : data.filter(n => n.userId === CURRENT_USER.userId);
 
-            const countEl = document.getElementById("stat-total-notes");
-            if (countEl) countEl.innerText = displayNotes.length;
+            // الفلترة: أعرض الملاحظات التي أملكها OR الملاحظات المشاركة معي
+            let displayNotes = [];
+            if (CURRENT_USER.roleId === ROLE_ADMIN) {
+                displayNotes = data;
+            } else {
+                displayNotes = data.filter(n =>
+                    n.userId === CURRENT_USER.userId || // ملاحظاتي
+                    (n.sharedNotes && n.sharedNotes.some(sn => sn.sharedWithUserId === CURRENT_USER.userId)) // مشاركة معي
+                );
+            }
 
+            document.getElementById("stat-total-notes").innerText = displayNotes.length;
             const list = document.getElementById("notesList");
             if (!list) return;
             list.innerHTML = "";
 
             displayNotes.forEach(n => {
-                const ownerTag = (CURRENT_USER.roleId === ROLE_ADMIN && n.userId !== CURRENT_USER.userId) ? `<small class="text-primary d-block mb-1">(User #${n.userId})</small>` : "";
+                const isMine = n.userId === CURRENT_USER.userId;
+
+                // شارات التمييز
+                const ownerBadge = isMine
+                    ? ""
+                    : `<span class="badge bg-primary mb-2"><i class="fas fa-share"></i> Shared by ${n.user ? n.user.firstName : 'Unknown'}</span>`;
+
                 const catBadge = n.category ? `<span class="badge bg-info text-dark me-1"><i class="fas fa-tag"></i> ${n.category.categoryName}</span>` : "";
                 const foldBadge = n.folder ? `<span class="badge bg-warning text-dark me-1"><i class="fas fa-folder"></i> ${n.folder.folderName}</span>` : "";
 
                 let tagsHtml = "";
-                if (n.tags && n.tags.length > 0) {
-                    n.tags.forEach(t => {
-                        tagsHtml += `<span class="badge bg-secondary rounded-pill me-1" style="font-size:0.7rem;">#${t.tagName}</span>`;
-                    });
+                if (n.tags && n.tags.length > 0) n.tags.forEach(t => tagsHtml += `<span class="badge bg-secondary rounded-pill me-1" style="font-size:0.7rem;">#${t.tagName}</span>`);
+
+                // أزرار التحكم (تظهر فقط للمالك أو المدير)
+                let actionMenu = "";
+                if (isMine || CURRENT_USER.roleId === ROLE_ADMIN) {
+                    actionMenu = `
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="openShareModal(${n.noteId})"><i class="fas fa-user-plus"></i> Share</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="#" onclick="editNote(${n.noteId})">Edit</a></li>
+                                <li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(${n.noteId})">Delete</a></li>
+                            </ul>
+                        </div>`;
+                } else {
+                    // للملاحظات المشاركة (عرض فقط)
+                    actionMenu = `<small class="text-muted"><i class="fas fa-eye"></i> View Only</small>`;
                 }
 
                 list.innerHTML += `
                     <div class="col-md-4 mb-3">
-                        <div class="card card-custom h-100 border-left-success shadow-sm">
+                        <div class="card card-custom h-100 border-left-${isMine ? 'success' : 'primary'} shadow-sm">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start mb-2">
-                                    <h5 class="card-title text-success fw-bold mb-0">${n.title}</h5>
-                                    <div class="dropdown">
-                                        <button class="btn btn-sm btn-light" type="button" data-bs-toggle="dropdown"><i class="fas fa-ellipsis-v"></i></button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#" onclick="editNote(${n.noteId})">Edit</a></li>
-                                            <li><a class="dropdown-item text-danger" href="#" onclick="deleteNote(${n.noteId})">Delete</a></li>
-                                        </ul>
-                                    </div>
+                                    <h5 class="card-title fw-bold mb-0 ${isMine ? 'text-success' : 'text-primary'}">${n.title}</h5>
+                                    ${actionMenu}
                                 </div>
-                                ${ownerTag}
+                                ${ownerBadge}
                                 <div class="mb-2">${catBadge} ${foldBadge}</div>
                                 <div class="mb-2">${tagsHtml}</div>
                                 <p class="card-text text-muted" style="white-space: pre-wrap;">${n.content}</p>
-                                <small class="text-muted" style="font-size: 0.8rem;">Updated: ${n.createdAt ? new Date(n.createdAt).toLocaleDateString() : '-'}</small>
+                                <small class="text-muted" style="font-size: 0.8rem;">
+                                    ${new Date(n.createdAt).toLocaleDateString()}
+                                </small>
                             </div>
                         </div>
                     </div>`;
@@ -477,19 +503,24 @@ async function getNotes() {
     } catch (e) { console.error("Error getting notes", e); }
 }
 
+// دالة فتح نافذة إنشاء/تعديل الملاحظة
 function openNoteModal() {
     document.getElementById("noteForm").reset();
     document.getElementById("nId").value = "";
     document.getElementById("noteModalTitle").innerText = "New Note";
+    // التأكد من إلغاء تحديد جميع العلامات عند فتح نافذة جديدة
+    document.querySelectorAll('.note-tag-check').forEach(cb => cb.checked = false);
     loadNoteLookups();
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
 
+// تحديث: دالة تعديل الملاحظة (مع دعم العلامات)
 async function editNote(id) {
     const res = await fetch(`${API_URL}/Notes/${id}`);
     const n = await res.json();
-    await loadNoteLookups();
+    await loadNoteLookups(); // تحميل القوائم أولاً
 
+    // ملء حقول النموذج
     document.getElementById("nId").value = n.noteId;
     document.getElementById("nTitle").value = n.title;
     document.getElementById("nContent").value = n.content;
@@ -497,6 +528,10 @@ async function editNote(id) {
     if (document.getElementById("nCategory")) document.getElementById("nCategory").value = n.categoryId || "";
     if (document.getElementById("nFolder")) document.getElementById("nFolder").value = n.folderId || "";
 
+    // إلغاء تحديد الكل قبل تحديد العلامات الخاصة بهذه الملاحظة
+    document.querySelectorAll('.note-tag-check').forEach(cb => cb.checked = false);
+
+    // تحديد العلامات المرتبطة بالملاحظة
     if (n.tags && n.tags.length > 0) {
         n.tags.forEach(t => {
             const checkbox = document.getElementById(`tag-${t.tagId}`);
@@ -508,6 +543,7 @@ async function editNote(id) {
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
 
+// منطق حفظ الملاحظة (مع دعم العلامات)
 const noteForm = document.getElementById("noteForm");
 if (noteForm) {
     noteForm.addEventListener("submit", async (e) => {
@@ -515,6 +551,7 @@ if (noteForm) {
         const id = document.getElementById("nId").value;
         const isEdit = id ? true : false;
 
+        // جلب معرفات العلامات المحددة
         const selectedTagIds = [];
         document.querySelectorAll('.note-tag-check:checked').forEach(cb => {
             selectedTagIds.push(parseInt(cb.value));
@@ -527,18 +564,23 @@ if (noteForm) {
             content: document.getElementById("nContent").value,
             categoryId: document.getElementById("nCategory").value ? parseInt(document.getElementById("nCategory").value) : null,
             folderId: document.getElementById("nFolder").value ? parseInt(document.getElementById("nFolder").value) : null,
-            tagIds: selectedTagIds 
+            tagIds: selectedTagIds
         };
 
         const method = isEdit ? "PUT" : "POST";
         const url = isEdit ? `${API_URL}/Notes/${id}` : `${API_URL}/Notes`;
 
-        await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
-        getNotes();
+        const res = await fetch(url, { method: method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        if (res.ok) {
+            bootstrap.Modal.getInstance(document.getElementById('noteModal')).hide();
+            getNotes();
+        } else {
+            alert("Error saving note");
+        }
     });
 }
 
+// دالة حذف الملاحظة
 async function deleteNote(id) {
     if (confirm("Delete Note?")) {
         await fetch(`${API_URL}/Notes/${id}`, { method: "DELETE" });
@@ -546,6 +588,53 @@ async function deleteNote(id) {
     }
 }
 
+// دالة فتح نافذة المشاركة
+async function openShareModal(noteId) {
+    document.getElementById("shareNoteId").value = noteId;
+
+    // جلب قائمة المستخدمين لتعبئة الـ Select
+    const res = await fetch(`${API_URL}/Users`);
+    if (res.ok) {
+        const users = await res.json();
+        const sel = document.getElementById("shareUserSelect");
+        sel.innerHTML = "";
+        // استبعاد نفسي من القائمة
+        users.filter(u => u.userId !== CURRENT_USER.userId).forEach(u => {
+            sel.innerHTML += `<option value="${u.userId}">${u.firstName} ${u.lastName} (${u.email})</option>`;
+        });
+    }
+
+    new bootstrap.Modal(document.getElementById('shareModal')).show();
+}
+
+// منطق تنفيذ المشاركة
+const shareForm = document.getElementById("shareForm");
+if (shareForm) {
+    shareForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const payload = {
+            noteId: parseInt(document.getElementById("shareNoteId").value),
+            sharedWithUserId: parseInt(document.getElementById("shareUserSelect").value),
+            permissionLevel: document.getElementById("sharePermission").value
+        };
+
+        const res = await fetch(`${API_URL}/SharedNotes`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+        });
+
+        if (res.ok) {
+            alert("Note shared successfully!");
+            bootstrap.Modal.getInstance(document.getElementById('shareModal')).hide();
+            // تحديث قائمة الملاحظات لعرض أي تغييرات محتملة (على الرغم من أن المشاركة لا تؤثر على عرض القائمة الخاصة بنا مباشرة)
+            getNotes();
+        } else {
+            const err = await res.json();
+            alert("Error: " + (err.message || "Could not share note"));
+        }
+    });
+}
 // ================= 5. USERS LOGIC (CRUD + Manual ID) =================
 
 let isEditingUser = false;

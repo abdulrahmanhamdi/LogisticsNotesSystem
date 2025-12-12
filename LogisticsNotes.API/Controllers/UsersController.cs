@@ -75,21 +75,29 @@ namespace LogisticsNotes.API.Controllers
                 return BadRequest(new { message = "Email already exists." });
             }
 
-            if (user.CreatedAt == null)
-            {
-                user.CreatedAt = DateTime.Now;
-            }
+            if (user.CreatedAt == null) user.CreatedAt = DateTime.Now;
 
             _context.Users.Add(user);
-
             try
             {
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(); 
             }
             catch (DbUpdateException ex)
             {
                 return StatusCode(500, $"Internal server error: {ex.Message}");
             }
+
+
+            var defaultFolders = new List<Folder>
+    {
+        new Folder { UserId = user.UserId, FolderName = "My Orders", IsArchived = false, ColorCode = "#FF5733" },
+        new Folder { UserId = user.UserId, FolderName = "Complaints", IsArchived = false, ColorCode = "#C70039" },
+        new Folder { UserId = user.UserId, FolderName = "Personal Notes", IsArchived = false, ColorCode = "#28A745" }
+    };
+
+            _context.Folders.AddRange(defaultFolders);
+            await _context.SaveChangesAsync(); 
+                                               
 
             return CreatedAtAction(nameof(GetUser), new { id = user.UserId }, user);
         }
@@ -105,7 +113,6 @@ namespace LogisticsNotes.API.Controllers
 
             _context.Entry(user).State = EntityState.Modified;
 
-            // منع تعديل تاريخ الإنشاء
             _context.Entry(user).Property(x => x.CreatedAt).IsModified = false;
 
             try
