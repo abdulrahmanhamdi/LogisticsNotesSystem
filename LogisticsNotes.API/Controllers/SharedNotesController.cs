@@ -18,7 +18,6 @@ namespace LogisticsNotes.API.Controllers
             _context = context;
         }
 
-        // POST: api/SharedNotes 
         [HttpPost]
         public async Task<ActionResult<SharedNote>> ShareNote(SharedNote sharedNote)
         {
@@ -33,7 +32,6 @@ namespace LogisticsNotes.API.Controllers
             return CreatedAtAction("GetSharedNote", new { id = sharedNote.ShareId }, sharedNote);
         }
 
-        // GET: api/SharedNotes/5 
         [HttpGet("{id}")]
         public async Task<ActionResult<SharedNote>> GetSharedNote(int id)
         {
@@ -42,7 +40,6 @@ namespace LogisticsNotes.API.Controllers
             return sharedNote;
         }
 
-        // DELETE: api/SharedNotes/5 
         [HttpDelete("{id}")]
         public async Task<IActionResult> UnshareNote(int id)
         {

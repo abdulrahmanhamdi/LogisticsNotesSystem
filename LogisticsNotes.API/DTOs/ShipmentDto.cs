@@ -14,7 +14,6 @@
         public DateTime? EstimatedDeliveryDate { get; set; }
         public int? AssignedCourierId { get; set; }
 
-        // هذا هو الحقل الذي تحتاجه لتعديل السعر يدوياً
         public double ShippingCost { get; set; }
     }
 }
