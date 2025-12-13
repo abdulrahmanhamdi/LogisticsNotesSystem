@@ -209,6 +209,7 @@ function renderShipments(data) {
 
         if (isAdmin) {
             actionButtons = `
+                <button class="btn btn-sm btn-outline-success btn-action" onclick="openPaymentModal(${s.shipmentId})" title="Payment"><i class="fas fa-dollar-sign"></i></button>
                 <button class="btn btn-sm btn-outline-warning btn-action" onclick="openStatusModal(${s.shipmentId})" title="Status"><i class="fas fa-truck-loading"></i></button>
                 <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})" title="Edit"><i class="fas fa-edit"></i></button>
                 <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})" title="Delete"><i class="fas fa-trash"></i></button>
@@ -1001,56 +1002,118 @@ function getStatusBadge(statusId) {
 
 // ================= 8. PAYMENTS LOGIC =================
 
+// 1. Open payment modal
 async function openPaymentModal(shipmentId) {
     document.getElementById("payShipmentId").value = shipmentId;
-    const form = document.getElementById("paymentForm");
-    if (CURRENT_USER.roleId === ROLE_ADMIN) {
-        form.style.display = "block";
-        form.reset();
-        loadPaymentMethods();
-    } else {
-        form.style.display = "none";
-    }
-    const res = await fetch(`${API_URL}/Payments/ByShipment/${shipmentId}`);
-    const tbody = document.getElementById("paymentHistoryBody");
-    tbody.innerHTML = "<tr><td colspan='3'>Loading...</td></tr>";
-    if (res.ok) {
-        const payments = await res.json();
-        tbody.innerHTML = "";
-        if (payments.length === 0) tbody.innerHTML = "<tr><td colspan='3' class='text-center text-muted'>No payments recorded.</td></tr>";
-        else {
-            payments.forEach(p => {
-                tbody.innerHTML += `<tr><td>${new Date(p.paymentDate).toLocaleDateString()}</td><td>${p.methodName}</td><td class="fw-bold text-success">$${p.amount}</td></tr>`;
-            });
-        }
-    }
+
+    document.getElementById("paymentForm").reset();
+
+    await loadPaymentMethods();
+    await loadPaymentHistory(shipmentId);
+
     new bootstrap.Modal(document.getElementById('paymentModal')).show();
 }
-async function loadPaymentMethods() {
-    const res = await fetch(`${API_URL}/Payments/Methods`);
-    if (res.ok) {
-        const methods = await res.json();
-        const sel = document.getElementById("payMethod");
-        sel.innerHTML = "";
-        methods.forEach(m => sel.innerHTML += `<option value="${m.methodId}">${m.methodName}</option>`);
+
+// 2. Load payment history
+async function loadPaymentHistory(shipmentId) {
+    const tbody = document.getElementById("paymentHistoryBody");
+    tbody.innerHTML = "<tr><td colspan='3' class='text-center'>Loading...</td></tr>";
+
+    try {
+        const res = await fetch(`${API_URL}/Payments/ByShipment/${shipmentId}`);
+        if (res.ok) {
+            const payments = await res.json();
+            tbody.innerHTML = "";
+
+            if (payments.length === 0) {
+                tbody.innerHTML = "<tr><td colspan='3' class='text-center text-muted'>No payments recorded.</td></tr>";
+            } else {
+                payments.forEach(p => {
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${new Date(p.paymentDate).toLocaleDateString()}</td>
+                            <td>${p.methodName}</td>
+                            <td class="fw-bold text-success">$${p.amount}</td>
+                        </tr>`;
+                });
+            }
+        } else {
+            tbody.innerHTML = "<tr><td colspan='3' class='text-center text-danger'>Error loading history.</td></tr>";
+        }
+    } catch (e) {
+        console.error(e);
+        tbody.innerHTML = "<tr><td colspan='3' class='text-center text-danger'>Connection Error.</td></tr>";
     }
 }
+
+// 3. Load payment methods (dropdown)
+async function loadPaymentMethods() {
+    const sel = document.getElementById("payMethod");
+    if (sel.options.length > 0) return;
+
+    try {
+        const res = await fetch(`${API_URL}/Payments/Methods`);
+        if (res.ok) {
+            const methods = await res.json();
+            sel.innerHTML = "";
+            methods.forEach(m =>
+                sel.innerHTML += `<option value="${m.methodId}">${m.methodName}</option>`
+            );
+        }
+    } catch (e) {
+        console.error("Error loading payment methods", e);
+    }
+}
+
+// 4. Payment submit handler
 const paymentForm = document.getElementById("paymentForm");
 if (paymentForm) {
     paymentForm.addEventListener("submit", async (e) => {
         e.preventDefault();
+
+        const submitBtn = paymentForm.querySelector("button[type='submit']");
+        const originalText = submitBtn.innerText;
+        submitBtn.disabled = true;
+        submitBtn.innerText = "Processing...";
+
+        const shipmentId = parseInt(document.getElementById("payShipmentId").value);
         const amount = parseFloat(document.getElementById("payAmount").value);
-        if (amount <= 0) return alert("Amount must be positive!");
+        const methodId = parseInt(document.getElementById("payMethod").value);
+
+        if (amount <= 0) {
+            alert("Amount must be positive!");
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+            return;
+        }
+
         const payload = {
-            shipmentId: parseInt(document.getElementById("payShipmentId").value),
-            methodId: parseInt(document.getElementById("payMethod").value),
+            shipmentId: shipmentId,
+            methodId: methodId,
             amount: amount
         };
-        const res = await fetch(`${API_URL}/Payments`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        if (res.ok) {
-            alert("Payment Recorded!");
-            openPaymentModal(payload.shipmentId);
-        } else alert("Error recording payment.");
+
+        try {
+            const res = await fetch(`${API_URL}/Payments`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            if (res.ok) {
+                document.getElementById("payAmount").value = "";
+                await loadPaymentHistory(shipmentId);
+                alert("Payment Recorded Successfully! ✅");
+            } else {
+                alert("Error recording payment.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Connection Error");
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerText = originalText;
+        }
     });
 }
 
