@@ -262,10 +262,20 @@
                                 <input type="number" class="form-control" id="sWeight" value="1" step="0.1" min="0.1" required>
                             </div>
                         </div>
+
+                        <div class="mb-3">
+                            <label class="fw-bold text-success">Shipping Cost ($)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" class="form-control" id="sCost" step="0.5" placeholder="Leave empty to auto-calculate">
+                            </div>
+                            <small class="text-muted" style="font-size: 0.8rem;">Enter a value here to override the automatic calculation.</small>
+                        </div>
                         <div class="mb-3">
                             <label class="fw-bold text-primary">Assign Courier</label>
                             <select class="form-select" id="sCourier"><option value="">-- Unassigned --</option></select>
                         </div>
+
                         <button type="submit" class="btn btn-primary w-100">Save Shipment</button>
                     </form>
                 </div>

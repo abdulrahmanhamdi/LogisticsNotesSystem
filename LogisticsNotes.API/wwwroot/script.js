@@ -200,18 +200,36 @@ function renderShipments(data) {
 
     const isAdmin = CURRENT_USER && CURRENT_USER.roleId === ROLE_ADMIN;
     const isCourier = CURRENT_USER && CURRENT_USER.roleId === ROLE_COURIER;
-    const isCustomer = CURRENT_USER && CURRENT_USER.roleId === ROLE_CUSTOMER;
 
     if (actionsHeader) actionsHeader.style.display = "";
 
     data.forEach(s => {
-        let actionButtons = '';
+        const totalPaid = s.payments ? s.payments.reduce((sum, p) => sum + p.amount, 0) : 0;
+        const remaining = s.shippingCost - totalPaid;
 
+        let costDisplay = "";
+
+        if (remaining <= 0) {
+            costDisplay = `<span class="badge bg-success" style="font-size: 0.9rem;">Paid ($${s.shippingCost})</span>`;
+        }
+        else if (totalPaid > 0) {
+            costDisplay = `
+                <div class="text-warning fw-bold" style="font-size: 0.9rem;">$${remaining.toFixed(1)} left</div>
+                <small class="text-muted text-decoration-line-through" style="font-size: 0.75rem;">$${s.shippingCost}</small>
+            `;
+        }
+        else {
+            costDisplay = s.shippingCost > 0
+                ? `<span class="fw-bold text-danger">$${s.shippingCost}</span>`
+                : `<span class="fw-bold text-muted">$0</span>`;
+        }
+
+        let actionButtons = '';
         if (isAdmin) {
             actionButtons = `
-                <button class="btn btn-sm btn-outline-success btn-action" onclick="openPaymentModal(${s.shipmentId})" title="Payment"><i class="fas fa-dollar-sign"></i></button>
                 <button class="btn btn-sm btn-outline-warning btn-action" onclick="openStatusModal(${s.shipmentId})" title="Status"><i class="fas fa-truck-loading"></i></button>
-                <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})" title="Edit"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-primary btn-action" onclick="editShipment(${s.shipmentId})" title="Edit Price"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-sm btn-outline-success btn-action" onclick="openPaymentModal(${s.shipmentId})" title="Pay"><i class="fas fa-dollar-sign"></i></button>
                 <button class="btn btn-sm btn-outline-danger btn-action" onclick="deleteShipment(${s.shipmentId})" title="Delete"><i class="fas fa-trash"></i></button>
             `;
         } else if (isCourier) {
@@ -224,15 +242,8 @@ function renderShipments(data) {
             `;
         }
 
-        let costDisplay = s.shippingCost > 0
-            ? `<span class="fw-bold text-success">$${s.shippingCost}</span>`
-            : `<span class="fw-bold text-danger">$0</span>`;
-
-        // عرض اسم الفرع بدلاً من الرقم إذا كان الـ object موجوداً
         const originName = s.originBranch ? s.originBranch.branchName : s.originBranchId;
         const destName = s.destinationBranch ? s.destinationBranch.branchName : s.destinationBranchId;
-
-        // تلميح الحالة
         const statusDesc = s.currentStatus ? s.currentStatus.description : "";
 
         tbody.innerHTML += `
@@ -243,13 +254,14 @@ function renderShipments(data) {
                     <small class="text-muted">${originName} &rarr; ${destName}</small>
                 </td>
                 <td>${s.weight} KG</td>
-                <td>${costDisplay}</td>
+                <td>${costDisplay}</td> 
                 <td><span class="badge ${getStatusBadge(s.currentStatusId)}" title="${statusDesc}">${s.currentStatus ? s.currentStatus.statusName : s.currentStatusId}</span></td>
                 <td>${new Date(s.sendingDate).toLocaleDateString()}</td>
                 <td>${actionButtons}</td>
             </tr>`;
     });
 }
+
 
 const searchInput = document.getElementById("searchShipmentInput");
 if (searchInput) {
@@ -275,11 +287,13 @@ function openShipmentModal() {
 async function editShipment(id) {
     const res = await fetch(`${API_URL}/Shipments/${id}`);
     const s = await res.json();
+
     document.getElementById("sId").value = s.shipmentId;
     document.getElementById("sDesc").value = s.description;
     document.getElementById("sWeight").value = s.weight;
 
-    // ننتظر تحميل القوائم للتأكد من تعيين القيم
+    document.getElementById("sCost").value = s.shippingCost;
+
     await loadShipmentLookups();
 
     if (document.getElementById("sOrigin")) document.getElementById("sOrigin").value = s.originBranchId;
@@ -287,7 +301,6 @@ async function editShipment(id) {
     if (document.getElementById("sService")) document.getElementById("sService").value = s.serviceTypeId;
     if (document.getElementById("sCourier")) document.getElementById("sCourier").value = s.assignedCourierId || "";
 
-    document.getElementById("shipmentModalTitle").innerText = "Edit Shipment";
     new bootstrap.Modal(document.getElementById('shipmentModal')).show();
 }
 
@@ -302,10 +315,12 @@ if (shipmentForm) {
         const id = document.getElementById("sId").value;
         const isEdit = id ? true : false;
         const courierVal = document.getElementById("sCourier").value;
+        const costVal = document.getElementById("sCost").value;
 
         const payload = {
             shipmentId: isEdit ? parseInt(id) : 0,
             senderId: CURRENT_USER.userId,
+            shippingCost: costVal ? parseFloat(costVal) : 0,
             originBranchId: parseInt(document.getElementById("sOrigin").value),
             destinationBranchId: parseInt(document.getElementById("sDest").value),
             serviceTypeId: parseInt(document.getElementById("sService").value),

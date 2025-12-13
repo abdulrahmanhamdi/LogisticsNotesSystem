@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LogisticsNotes.API.Models;
+using LogisticsNotes.API.DTOs;
 
 namespace LogisticsNotes.API.Controllers
 {
@@ -27,6 +28,7 @@ namespace LogisticsNotes.API.Controllers
             _context = context;
         }
 
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Shipment>>> GetShipments()
         {
@@ -35,13 +37,14 @@ namespace LogisticsNotes.API.Controllers
                 .Include(s => s.DestinationBranch)
                 .Include(s => s.ServiceType)
                 .Include(s => s.CurrentStatus)
-                .Include(s => s.AssignedCourier)
-                    .ThenInclude(c => c.User)
-                .Include(s => s.AssignedCourier)
-                    .ThenInclude(c => c.Vehicle)
+                .Include(s => s.AssignedCourier).ThenInclude(c => c.User)
+                .Include(s => s.AssignedCourier).ThenInclude(c => c.Vehicle)
+
+                .Include(s => s.Payments)
+
+                .OrderByDescending(s => s.SendingDate)
                 .ToListAsync();
         }
-
         [HttpGet("{id}")]
         public async Task<ActionResult<Shipment>> GetShipment(int id)
         {
@@ -117,23 +120,33 @@ namespace LogisticsNotes.API.Controllers
         }
 
         [HttpPut("{id}")]
-        public async Task<IActionResult> PutShipment(int id, Shipment shipment)
+        public async Task<IActionResult> PutShipment(int id, ShipmentDto dto)
         {
-            if (id != shipment.ShipmentId) return BadRequest();
+            var shipment = await _context.Shipments.FindAsync(id);
+            if (shipment == null) return NotFound();
 
-            _context.Entry(shipment).State = EntityState.Modified;
-            _context.Entry(shipment).Property(x => x.SendingDate).IsModified = false;
+            shipment.Description = dto.Description;
+            shipment.OriginBranchId = dto.OriginBranchId;
+            shipment.DestinationBranchId = dto.DestinationBranchId;
+            shipment.ServiceTypeId = dto.ServiceTypeId;
+            shipment.AssignedCourierId = dto.AssignedCourierId;
 
-            try
+            if (dto.ShippingCost > 0)
             {
-                await _context.SaveChangesAsync();
+                shipment.ShippingCost = dto.ShippingCost;
             }
-            catch (DbUpdateConcurrencyException)
+            else if (shipment.Weight != dto.Weight || shipment.ServiceTypeId != dto.ServiceTypeId)
             {
-                if (!ShipmentExists(id)) return NotFound();
-                else throw;
+                var service = await _context.ServiceTypes.FindAsync(dto.ServiceTypeId);
+                if (service != null)
+                {
+                    shipment.ShippingCost = service.BasePrice + (dto.Weight * service.PricePerKg);
+                }
             }
 
+            shipment.Weight = dto.Weight;
+
+            await _context.SaveChangesAsync();
             return NoContent();
         }
 
