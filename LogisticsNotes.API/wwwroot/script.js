@@ -1118,6 +1118,7 @@ if (paymentForm) {
             if (res.ok) {
                 document.getElementById("payAmount").value = "";
                 await loadPaymentHistory(shipmentId);
+                getShipments();
                 alert("Payment Recorded Successfully! ✅");
             } else {
                 alert("Error recording payment.");
