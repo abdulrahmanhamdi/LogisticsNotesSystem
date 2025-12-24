@@ -169,35 +169,43 @@ namespace LogisticsNotes.API.Controllers
         public async Task<IActionResult> DeleteUser(int id)
         {
             var user = await _context.Users.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
+            if (user == null) return NotFound();
 
-            // SAFE DELETE LOGIC: Handle dependencies before deleting the user
+            var sharedLinks = await _context.SharedNotes
+                .Where(sn => sn.SharedWithUserId == id ||
+                             _context.Notes.Any(n => n.NoteId == sn.NoteId && n.UserId == id))
+                .ToListAsync();
+            _context.SharedNotes.RemoveRange(sharedLinks);
+            await _context.SaveChangesAsync();
+
             var courier = await _context.Couriers.FirstOrDefaultAsync(c => c.UserId == id);
             if (courier != null)
             {
-                // Unbind shipments from this courier to avoid Foreign Key conflicts
-                var relatedShipments = await _context.Shipments
+                var assignedShipments = await _context.Shipments
                     .Where(s => s.AssignedCourierId == courier.CourierId)
                     .ToListAsync();
+                foreach (var s in assignedShipments) { s.AssignedCourierId = null; }
 
-                foreach (var shipment in relatedShipments)
-                {
-                    shipment.AssignedCourierId = null;
-                }
-
+                _context.Couriers.Remove(courier);
                 await _context.SaveChangesAsync();
             }
 
-            // Notes, Folders, and Courier record will be deleted via SQL CASCADE
+            var sentShipments = await _context.Shipments.Where(s => s.SenderId == id).ToListAsync();
+            _context.Shipments.RemoveRange(sentShipments);
+
+            var userNotes = await _context.Notes.Where(n => n.UserId == id).ToListAsync();
+            _context.Notes.RemoveRange(userNotes);
+
+            var userFolders = await _context.Folders.Where(f => f.UserId == id).ToListAsync();
+            _context.Folders.RemoveRange(userFolders);
+
+            await _context.SaveChangesAsync();
+
             _context.Users.Remove(user);
             await _context.SaveChangesAsync();
 
             return NoContent();
         }
-
         private bool UserExists(int id)
         {
             return _context.Users.Any(e => e.UserId == id);
