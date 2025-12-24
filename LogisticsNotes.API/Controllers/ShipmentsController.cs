@@ -71,7 +71,7 @@ namespace LogisticsNotes.API.Controllers
             var service = await _context.ServiceTypes.FindAsync(shipment.ServiceTypeId);
             if (service != null)
             {
-                shipment.ShippingCost = service.BasePrice + (service.PricePerKg * shipment.Weight);
+                shipment.ShippingCost = service.BasePrice + (service.PricePerKg * shipment.Weight); 
             }
 
             _context.Shipments.Add(shipment);

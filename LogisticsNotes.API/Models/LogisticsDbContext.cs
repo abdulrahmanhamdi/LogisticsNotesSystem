@@ -36,10 +36,10 @@ public partial class LogisticsDbContext : DbContext
 
         modelBuilder.Entity<Courier>(entity =>
         {
-            entity.HasKey(e => e.CourierId);
+            entity.HasKey(e => e.CourierId);//e = external tables 
             entity.Property(e => e.IsActive).HasDefaultValue(true);
-            entity.HasOne(d => d.CurrentBranch).WithMany(p => p.Couriers).HasConstraintName("FK_Couriers_Branches");
-            entity.HasOne(d => d.User).WithOne(p => p.Courier).HasConstraintName("FK_Couriers_Users");
+            entity.HasOne(d => d.CurrentBranch).WithMany(p => p.Couriers).HasConstraintName("FK_Couriers_Branches");//d = default 
+            entity.HasOne(d => d.User).WithOne(p => p.Courier).HasConstraintName("FK_Couriers_Users"); //p = primary key
             entity.HasOne(d => d.Vehicle).WithMany(p => p.Couriers).HasConstraintName("FK_Couriers_Vehicles");
         });
 
@@ -135,3 +135,4 @@ public partial class LogisticsDbContext : DbContext
 
     partial void OnModelCreatingPartial(ModelBuilder modelBuilder);
 }
+

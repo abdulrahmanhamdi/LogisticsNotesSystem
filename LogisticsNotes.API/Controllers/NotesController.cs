@@ -73,9 +73,9 @@ namespace LogisticsNotes.API.Controllers
                 CreatedAt = DateTime.Now
             };
 
-            if (input.TagIds != null && input.TagIds.Any())
+            if (input.TagIds != null && input.TagIds.Any()) // Check if there are any TagIds provided
             {
-                foreach (var tagId in input.TagIds)
+                foreach (var tagId in input.TagIds) 
                 {
                     var tag = await _context.Tags.FindAsync(tagId);
                     if (tag != null) note.Tags.Add(tag);
@@ -96,7 +96,7 @@ namespace LogisticsNotes.API.Controllers
 
             var existingNote = await _context.Notes
                 .Include(n => n.Tags)
-                .FirstOrDefaultAsync(n => n.NoteId == id);
+                .FirstOrDefaultAsync(n => n.NoteId == id); 
 
             if (existingNote == null) return NotFound();
 

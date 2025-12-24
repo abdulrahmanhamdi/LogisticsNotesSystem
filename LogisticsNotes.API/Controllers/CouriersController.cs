@@ -47,7 +47,7 @@ namespace LogisticsNotes.API.Controllers
         public async Task<ActionResult<Courier>> UpsertCourier(Courier courier)
         {
             var existingCourier = await _context.Couriers
-                .FirstOrDefaultAsync(c => c.UserId == courier.UserId);
+                .FirstOrDefaultAsync(c => c.UserId == courier.UserId);// It returns the courier with the given UserId, or null if not found.
 
             if (existingCourier != null)
             {
@@ -78,15 +78,46 @@ namespace LogisticsNotes.API.Controllers
             return Ok(courier);
         }
         // DELETE: api/Couriers/5
+        // DELETE: api/Couriers/5
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCourier(int id)
         {
             var courier = await _context.Couriers.FindAsync(id);
-            if (courier == null) return NotFound();
+            if (courier == null)
+            {
+                return NotFound();
+            }
 
+            // 1. Unlink shipments assigned to this courier before deletion
+            var assignedShipments = await _context.Shipments
+                .Where(s => s.AssignedCourierId == id)
+                .ToListAsync();
+
+            if (assignedShipments.Any())
+            {
+                foreach (var shipment in assignedShipments)
+                {
+                    shipment.AssignedCourierId = null; // Make the shipment unassigned
+                }
+                // Save changes in the Shipments table first
+                await _context.SaveChangesAsync();
+            }
+
+            // 2. Now the courier can be safely deleted
             _context.Couriers.Remove(courier);
-            await _context.SaveChangesAsync();
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                // Extra protection in case there are other relationships we missed
+                return StatusCode(500, $"Cannot delete courier. {ex.InnerException?.Message ?? ex.Message}");
+            }
+
             return NoContent();
         }
+
     }
 }

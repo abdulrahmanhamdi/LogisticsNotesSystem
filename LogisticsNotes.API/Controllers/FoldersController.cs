@@ -20,11 +20,24 @@ namespace LogisticsNotes.API.Controllers
             _context = context;
         }
 
-        // GET: api/Folders
+        // ============================================================
+        // ✅ Most important change here: (GetFolders)
+        // Now we require UserId and filter the results accordingly
+        // ============================================================
+        // GET: api/Folders?userId=1
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Folder>>> GetFolders()
+        public async Task<ActionResult<IEnumerable<Folder>>> GetFolders([FromQuery] int userId)
         {
-            return await _context.Folders.ToListAsync();
+            // Validate that UserId is provided
+            if (userId <= 0)
+            {
+                return BadRequest(new { message = "User ID is required to fetch folders." });
+            }
+
+            // Retrieve folders belonging to this user only
+            return await _context.Folders
+                .Where(f => f.UserId == userId) // <--- This line prevents duplication
+                .ToListAsync();
         }
 
         // GET: api/Folders/5
@@ -42,7 +55,6 @@ namespace LogisticsNotes.API.Controllers
         }
 
         // PUT: api/Folders/5
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         public async Task<IActionResult> PutFolder(int id, Folder folder)
         {
@@ -73,7 +85,6 @@ namespace LogisticsNotes.API.Controllers
         }
 
         // POST: api/Folders
-        // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
         public async Task<ActionResult<Folder>> PostFolder(Folder folder)
         {

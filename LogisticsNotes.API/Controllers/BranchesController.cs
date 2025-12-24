@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using LogisticsNotes.API.Models;
 
-namespace LogisticsNotes.API.Controllers
+namespace LogisticsNotes.API.Controllers 
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]")] 
     [ApiController]
     public class BranchesController : ControllerBase
     {

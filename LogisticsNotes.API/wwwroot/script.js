@@ -146,14 +146,14 @@ function applyRolePermissions(roleId) {
 
 function loadAllData() {
     getShipments();
-    getNotes(); // سيجلب المجلدات والتاغات داخلياً
+    getNotes(); 
     if (CURRENT_USER.roleId === ROLE_ADMIN) {
         getUsers();
-        getRoles(); // للمودال
+        getRoles(); 
         getBranchesTable();
         getVehicles();
     }
-    loadShipmentLookups(); // لتجهيز قوائم الشحنات
+    loadShipmentLookups();
 }
 
 // ================= 3. SHIPMENTS LOGIC =================
@@ -357,7 +357,6 @@ async function loadShipmentLookups() {
             const originSel = document.getElementById("sOrigin");
             const destSel = document.getElementById("sDest");
             if (originSel && destSel) {
-                // حفظ القيمة الحالية إذا كنا في وضع التعديل
                 const currentOrigin = originSel.value;
                 const currentDest = destSel.value;
 
@@ -425,17 +424,28 @@ async function loadNoteLookups() {
             const categories = await resCat.json();
             const catSelect = document.getElementById("nCategory");
             catSelect.innerHTML = '<option value="">-- No Category --</option>';
-            categories.forEach(c => catSelect.innerHTML += `<option value="${c.categoryId}">${c.categoryName}</option>`);
+            categories.forEach(c =>
+                catSelect.innerHTML += `<option value="${c.categoryId}">${c.categoryName}</option>`
+            );
         }
 
-        // 2. Folders
-        const resFold = await fetch(`${API_URL}/Folders`);
-        if (resFold.ok) {
-            let folders = await resFold.json();
-            if (CURRENT_USER.roleId !== ROLE_ADMIN) folders = folders.filter(f => f.userId === CURRENT_USER.userId);
-            const foldSelect = document.getElementById("nFolder");
-            foldSelect.innerHTML = '<option value="">-- No Folder --</option>';
-            folders.forEach(f => foldSelect.innerHTML += `<option value="${f.folderId}">${f.folderName}</option>`);
+
+        // Ensure the user is logged in before sending the request
+        if (CURRENT_USER && CURRENT_USER.userId) {
+            // Send the userId with the request so the server accepts it
+            const resFold = await fetch(`${API_URL}/Folders?userId=${CURRENT_USER.userId}`);
+
+            if (resFold.ok) {
+                let folders = await resFold.json();
+
+                const foldSelect = document.getElementById("nFolder");
+                foldSelect.innerHTML = '<option value="">-- No Folder --</option>';
+                folders.forEach(f =>
+                    foldSelect.innerHTML += `<option value="${f.folderId}">${f.folderName}</option>`
+                );
+            } else {
+                console.error("Failed to load folders: Status", resFold.status);
+            }
         }
 
         // 3. TAGS - Checkboxes
@@ -456,24 +466,24 @@ async function loadNoteLookups() {
                 });
             }
         }
-    } catch (e) { console.error("Error loading note lookups", e); }
+    } catch (e) {
+        console.error("Error loading note lookups", e);
+    }
 }
 
-// تحديث: جلب الملاحظات (المملوكة والمشاركة)
 async function getNotes() {
     try {
         const res = await fetch(`${API_URL}/Notes`);
         if (res.ok) {
             const data = await res.json();
 
-            // الفلترة: أعرض الملاحظات التي أملكها OR الملاحظات المشاركة معي
             let displayNotes = [];
             if (CURRENT_USER.roleId === ROLE_ADMIN) {
                 displayNotes = data;
             } else {
                 displayNotes = data.filter(n =>
-                    n.userId === CURRENT_USER.userId || // ملاحظاتي
-                    (n.sharedNotes && n.sharedNotes.some(sn => sn.sharedWithUserId === CURRENT_USER.userId)) // مشاركة معي
+                    n.userId === CURRENT_USER.userId || 
+                    (n.sharedNotes && n.sharedNotes.some(sn => sn.sharedWithUserId === CURRENT_USER.userId)) 
                 );
             }
 
@@ -485,7 +495,6 @@ async function getNotes() {
             displayNotes.forEach(n => {
                 const isMine = n.userId === CURRENT_USER.userId;
 
-                // شارات التمييز
                 const ownerBadge = isMine
                     ? ""
                     : `<span class="badge bg-primary mb-2"><i class="fas fa-share"></i> Shared by ${n.user ? n.user.firstName : 'Unknown'}</span>`;
@@ -496,7 +505,6 @@ async function getNotes() {
                 let tagsHtml = "";
                 if (n.tags && n.tags.length > 0) n.tags.forEach(t => tagsHtml += `<span class="badge bg-secondary rounded-pill me-1" style="font-size:0.7rem;">#${t.tagName}</span>`);
 
-                // أزرار التحكم (تظهر فقط للمالك أو المدير)
                 let actionMenu = "";
                 if (isMine || CURRENT_USER.roleId === ROLE_ADMIN) {
                     actionMenu = `
@@ -510,7 +518,6 @@ async function getNotes() {
                             </ul>
                         </div>`;
                 } else {
-                    // للملاحظات المشاركة (عرض فقط)
                     actionMenu = `<small class="text-muted"><i class="fas fa-eye"></i> View Only</small>`;
                 }
 
@@ -537,24 +544,20 @@ async function getNotes() {
     } catch (e) { console.error("Error getting notes", e); }
 }
 
-// دالة فتح نافذة إنشاء/تعديل الملاحظة
 function openNoteModal() {
     document.getElementById("noteForm").reset();
     document.getElementById("nId").value = "";
     document.getElementById("noteModalTitle").innerText = "New Note";
-    // التأكد من إلغاء تحديد جميع العلامات عند فتح نافذة جديدة
     document.querySelectorAll('.note-tag-check').forEach(cb => cb.checked = false);
     loadNoteLookups();
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
 
-// تحديث: دالة تعديل الملاحظة (مع دعم العلامات)
 async function editNote(id) {
     const res = await fetch(`${API_URL}/Notes/${id}`);
     const n = await res.json();
-    await loadNoteLookups(); // تحميل القوائم أولاً
+    await loadNoteLookups();
 
-    // ملء حقول النموذج
     document.getElementById("nId").value = n.noteId;
     document.getElementById("nTitle").value = n.title;
     document.getElementById("nContent").value = n.content;
@@ -562,10 +565,8 @@ async function editNote(id) {
     if (document.getElementById("nCategory")) document.getElementById("nCategory").value = n.categoryId || "";
     if (document.getElementById("nFolder")) document.getElementById("nFolder").value = n.folderId || "";
 
-    // إلغاء تحديد الكل قبل تحديد العلامات الخاصة بهذه الملاحظة
     document.querySelectorAll('.note-tag-check').forEach(cb => cb.checked = false);
 
-    // تحديد العلامات المرتبطة بالملاحظة
     if (n.tags && n.tags.length > 0) {
         n.tags.forEach(t => {
             const checkbox = document.getElementById(`tag-${t.tagId}`);
@@ -577,7 +578,6 @@ async function editNote(id) {
     new bootstrap.Modal(document.getElementById('noteModal')).show();
 }
 
-// منطق حفظ الملاحظة (مع دعم العلامات)
 const noteForm = document.getElementById("noteForm");
 if (noteForm) {
     noteForm.addEventListener("submit", async (e) => {
@@ -585,7 +585,6 @@ if (noteForm) {
         const id = document.getElementById("nId").value;
         const isEdit = id ? true : false;
 
-        // جلب معرفات العلامات المحددة
         const selectedTagIds = [];
         document.querySelectorAll('.note-tag-check:checked').forEach(cb => {
             selectedTagIds.push(parseInt(cb.value));
@@ -614,7 +613,6 @@ if (noteForm) {
     });
 }
 
-// دالة حذف الملاحظة
 async function deleteNote(id) {
     if (confirm("Delete Note?")) {
         await fetch(`${API_URL}/Notes/${id}`, { method: "DELETE" });
@@ -622,17 +620,14 @@ async function deleteNote(id) {
     }
 }
 
-// دالة فتح نافذة المشاركة
 async function openShareModal(noteId) {
     document.getElementById("shareNoteId").value = noteId;
 
-    // جلب قائمة المستخدمين لتعبئة الـ Select
     const res = await fetch(`${API_URL}/Users`);
     if (res.ok) {
         const users = await res.json();
         const sel = document.getElementById("shareUserSelect");
         sel.innerHTML = "";
-        // استبعاد نفسي من القائمة
         users.filter(u => u.userId !== CURRENT_USER.userId).forEach(u => {
             sel.innerHTML += `<option value="${u.userId}">${u.firstName} ${u.lastName} (${u.email})</option>`;
         });
@@ -641,7 +636,6 @@ async function openShareModal(noteId) {
     new bootstrap.Modal(document.getElementById('shareModal')).show();
 }
 
-// منطق تنفيذ المشاركة
 const shareForm = document.getElementById("shareForm");
 if (shareForm) {
     shareForm.addEventListener("submit", async (e) => {
@@ -661,7 +655,6 @@ if (shareForm) {
         if (res.ok) {
             alert("Note shared successfully!");
             bootstrap.Modal.getInstance(document.getElementById('shareModal')).hide();
-            // تحديث قائمة الملاحظات لعرض أي تغييرات محتملة (على الرغم من أن المشاركة لا تؤثر على عرض القائمة الخاصة بنا مباشرة)
             getNotes();
         } else {
             const err = await res.json();
